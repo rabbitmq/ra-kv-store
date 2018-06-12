@@ -45,7 +45,6 @@ end_per_suite(Config) ->
 %% -------------------------------------------------------------------
 
 kv_store(_Config) ->
-    %% FIXME too much log on the default output
     Nodes = [{ra_kv1, node()}, {ra_kv2, node()}, {ra_kv3, node()}],
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
