@@ -16,7 +16,19 @@
 -module(ra_kv_store).
 -behaviour(ra_machine).
 
--export([init/1, apply/3]).
+-export([init/1, apply/3, write/3, read/2, cas/4]).
+
+write(ServerReference, Key, Value) ->
+    {ok, _, _} = ra:send_and_await_consensus(ServerReference, {write, Key, Value}),
+    ok.
+
+read(ServerReference, Key) ->
+    {ok, {_, Value}, _} = ra:consistent_query(ServerReference, fun(State) -> maps:get(Key, State, undefined) end),
+    Value.
+
+cas(ServerReference, Key, ExpectedValue, NewValue) ->
+    {ok, ReadValue, _} = ra:send_and_await_consensus(ServerReference, {cas, Key, ExpectedValue, NewValue}),
+    ReadValue.
 
 init(_Config) -> {#{}, []}.
 
@@ -32,3 +44,4 @@ apply(_Index, {cas, Key, ExpectedValue, NewValue}, State) ->
         ReadValue ->
             {State, [], ReadValue}
     end.
+
