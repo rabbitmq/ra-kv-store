@@ -20,15 +20,16 @@
 -export([stop/1]).
 
 start(_Type, _Args) ->
-    Nodes = [{ra_kv1, node()}, {ra_kv2, node()}, {ra_kv3, node()}],
+    {ok, Nodes} = application:get_env(ra_kv_store, nodes),
+    {ok, ServerReference} = application:get_env(ra_kv_store, server_reference),
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
-    {ok, _, _} = ra:start_cluster(ClusterId, Machine, Nodes),
+    ra:start_cluster(ClusterId, Machine, Nodes),
 
     Dispatch = cowboy_router:compile([
-        {'_', [{"/:key", ra_kv_store_handler, []}]}
+        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ServerReference}]}]}
     ]),
 
     {ok, Port} = application:get_env(ra_kv_store, port),

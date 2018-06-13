@@ -19,8 +19,9 @@
 -export([init/2]).
 
 init(Req0=#{method := <<"GET">>}, State) ->
+    ServerReference = proplists:get_value(server_reference, State),
 	Key = cowboy_req:binding(key, Req0),
-    {ok, Value, _} = ra:send_and_await_consensus(ra_kv1, {read, Key}),
+    {ok, Value, _} = ra:send_and_await_consensus(ServerReference, {read, Key}),
     Req = case Value of
         undefined ->
             cowboy_req:reply(404,
@@ -35,16 +36,17 @@ init(Req0=#{method := <<"GET">>}, State) ->
     end,
 	{ok, Req, State};
 init(Req0=#{method := <<"PUT">>}, State) ->
+    ServerReference = proplists:get_value(server_reference, State),
     Key = cowboy_req:binding(key, Req0),
     {ok, KeyValues, Req1} = cowboy_req:read_urlencoded_body(Req0),
     Value = proplists:get_value(<<"value">>, KeyValues),
     Expected = proplists:get_value(<<"expected">>, KeyValues),
     Req = case Expected of
         undefined ->
-            {ok, _, _} = ra:send_and_await_consensus(ra_kv1, {write, Key, Value}),
+            {ok, _, _} = ra:send_and_await_consensus(ServerReference, {write, Key, Value}),
             cowboy_req:reply(204, #{}, Req1);
         Expected ->
-            {ok, ReadValue, _} = ra:send_and_await_consensus(ra_kv1, {cas, Key, Expected, Value}),
+            {ok, ReadValue, _} = ra:send_and_await_consensus(ServerReference, {cas, Key, Expected, Value}),
             case ReadValue of
                 Expected ->
                     cowboy_req:reply(204, #{}, Req1);

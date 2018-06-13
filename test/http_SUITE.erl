@@ -55,7 +55,7 @@ http_handler(_Config) ->
     application:ensure_all_started(cowboy),
 
     Dispatch = cowboy_router:compile([
-        {'_', [{"/:key", ra_kv_store_handler, []}]}
+        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ra_kv1}]}]}
     ]),
 
     {ok, Socket} = gen_tcp:listen(0, []),

@@ -5,7 +5,9 @@ PROJECT_MOD = ra_kv_store_app
 
 define PROJECT_ENV
 [
-	{port, 8080}
+	{port, 8080},
+    {nodes, [{ra_kv1, 'ra_kv_store@127.0.0.1'}]},
+    {server_reference, ra_kv1}
 ]
 endef
 
