@@ -48,10 +48,17 @@
                             )
                        (c/exec :mkdir logDir)
                        (c/exec binary "start")
+                       (Thread/sleep 2000)
                        )
                      )
              (teardown! [_ test node]
-                        (info node "tearing down RA KV Store"))))
+                        (info node "tearing down RA KV Store")
+                        (c/su
+                          (c/exec binary "stop")
+                          (c/exec :rm :-rf dir)
+                          (c/exec :rm :-rf "/tmp/ra_kv_store")
+                          )
+                        )))
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
