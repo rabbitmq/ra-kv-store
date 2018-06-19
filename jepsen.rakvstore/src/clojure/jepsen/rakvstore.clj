@@ -67,6 +67,8 @@
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
 (def binary "/opt/rakvstore/bin/ra_kv_store_release")
+(def logfile "/opt/rakvstore/log/erlang.log.1")
+(def erllogfile "/opt/rakvstore/log/run_erl.log")
 
 (defn db
       "RA KV Store."
@@ -95,7 +97,11 @@
                           (c/exec :rm :-rf dir)
                           (c/exec :rm :-rf "/tmp/ra_kv_store")
                           )
-                        )))
+                        )
+             db/LogFiles
+             (log-files [_ test node]
+                        [logfile erllogfile])
+             ))
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
@@ -112,10 +118,16 @@
                           :linear    (checker/linearizable)
                           :timeline  (timeline/html)})
               :client (Client. nil)
+              :nemesis    (nemesis/partition-random-halves)
               :generator (->> (gen/mix [r w cas])
-                              (gen/stagger 1)
-                              (gen/nemesis nil)
-                              (gen/time-limit 15))}))
+                              (gen/stagger 1/10)
+                              (gen/nemesis
+                                (gen/seq (cycle [(gen/sleep 5)
+                                                 {:type :info, :f :start}
+                                                 (gen/sleep 5)
+                                                 {:type :info, :f :stop}]))
+                                )
+                              (gen/time-limit (:time-limit opts)))}))
               ;}))
 
 (defn -main
