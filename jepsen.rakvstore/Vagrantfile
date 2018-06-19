@@ -15,7 +15,7 @@ Vagrant.configure("2") do |config|
     n1.vm.network "private_network", ip: "192.168.33.10"
 
     n1.vm.provider "virtualbox" do |vb|
-      vb.memory = "1024"
+      vb.memory = "768"
     end
 
     n1.vm.provision "shell", inline: <<-SHELL
@@ -23,6 +23,7 @@ Vagrant.configure("2") do |config|
       sudo service ssh restart
       sudo echo '127.0.1.1       n1' | sudo tee -a /etc/hosts
       sudo echo '192.168.33.11       n2' | sudo tee -a /etc/hosts
+      sudo echo '192.168.33.12       n3' | sudo tee -a /etc/hosts
     SHELL
   end
 
@@ -37,7 +38,7 @@ Vagrant.configure("2") do |config|
       n2.vm.network "private_network", ip: "192.168.33.11"
 
       n2.vm.provider "virtualbox" do |vb|
-        vb.memory = "1024"
+        vb.memory = "768"
       end
 
       n2.vm.provision "shell", inline: <<-SHELL
@@ -45,6 +46,30 @@ Vagrant.configure("2") do |config|
         sudo service ssh restart
         sudo echo '127.0.1.1       n2' | sudo tee -a /etc/hosts
         sudo echo '192.168.33.10       n1' | sudo tee -a /etc/hosts
+        sudo echo '192.168.33.12       n3' | sudo tee -a /etc/hosts
+      SHELL
+    end
+
+    config.vm.define "n3" do |n3|
+      n3.vm.box = "debian/contrib-jessie64"
+      n3.vm.hostname = "n3"
+
+      n3.vm.box_check_update = false
+
+      n3.vm.network "forwarded_port", guest: 8080, host: 8092
+
+      n3.vm.network "private_network", ip: "192.168.33.12"
+
+      n3.vm.provider "virtualbox" do |vb|
+        vb.memory = "768"
+      end
+
+      n3.vm.provision "shell", inline: <<-SHELL
+        sudo sed -i '/PasswordAuthentication no/c\PasswordAuthentication yes' /etc/ssh/sshd_config
+        sudo service ssh restart
+        sudo echo '127.0.1.1       n3' | sudo tee -a /etc/hosts
+        sudo echo '192.168.33.10       n1' | sudo tee -a /etc/hosts
+        sudo echo '192.168.33.11       n2' | sudo tee -a /etc/hosts
       SHELL
     end
 

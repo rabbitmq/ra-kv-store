@@ -16,12 +16,16 @@
 (ns jepsen.rakvstore
     (:require [clojure.tools.logging :refer :all]
       [clojure.string :as str]
+      [knossos.model :as model]
       [jepsen [cli :as cli]
+              [checker :as checker]
               [control :as c]
               [db :as db]
               [client :as client]
+              [nemesis :as nemesis]
               [generator :as gen]
               [tests :as tests]]
+      [jepsen.checker.timeline :as timeline]
       [jepsen.control.util :as cu]
       [jepsen.os.debian :as debian]))
 
@@ -102,6 +106,11 @@
              {:name "rakvstore"
               :os   debian/os
               :db   (db)
+              :model (model/cas-register)
+              :checker (checker/compose
+                         {:perf      (checker/perf)
+                          :linear    (checker/linearizable)
+                          :timeline  (timeline/html)})
               :client (Client. nil)
               :generator (->> (gen/mix [r w cas])
                               (gen/stagger 1)
