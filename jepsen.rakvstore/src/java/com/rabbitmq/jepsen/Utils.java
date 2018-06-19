@@ -16,6 +16,13 @@
 
 package com.rabbitmq.jepsen;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,6 +30,7 @@ import java.util.stream.Collectors;
 /**
  *
  */
+@SuppressWarnings("unchecked")
 public class Utils {
 
     public static String configuration(Map<Object, Object> test, Object currentNode) {
@@ -51,6 +59,101 @@ public class Utils {
     public static String vmArgs() {
         return "-sname kv\n"
             + "-setcookie ra_kv_store";
+    }
+
+    public static Client createClient(Object node) {
+        return new Client(node.toString());
+    }
+
+    public static Object get(Client client, Object key) throws Exception {
+        return client.get(key);
+    }
+
+    public static void write(Client client, Object key, Object value) throws Exception {
+        client.write(key, value);
+    }
+
+    public static boolean cas(Client client, Object key, Object oldValue, Object newValue) throws Exception {
+        return client.cas(key, oldValue, newValue);
+    }
+
+    public static class Client {
+
+        private final String node;
+
+        public Client(String node) {
+            this.node = node;
+        }
+
+        String get(Object key) throws Exception {
+            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                try {
+                    return response(conn);
+                } catch (FileNotFoundException e) {
+                    return null;
+                }
+
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        }
+
+        void write(Object key, Object value) throws Exception {
+            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("PUT");
+                conn.setDoOutput(true);
+                try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
+                    out.write("value=" + value.toString());
+                }
+                conn.getInputStream();
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        }
+
+        boolean cas(Object key, Object oldValue, Object newValue) throws Exception {
+            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("PUT");
+                conn.setDoOutput(true);
+                try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
+                    out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
+                }
+                conn.getInputStream();
+                return true;
+            } catch (Exception e) {
+                return false;
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        }
+
+        private String response(HttpURLConnection con) throws IOException {
+            StringBuilder content = new StringBuilder();
+            try (BufferedReader in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+            }
+            return content.toString();
+        }
     }
 
     static Object get(Map<Object, Object> map, String keyStringValue) {

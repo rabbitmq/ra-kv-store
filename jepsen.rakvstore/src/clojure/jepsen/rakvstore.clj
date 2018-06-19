@@ -17,11 +17,45 @@
     (:require [clojure.tools.logging :refer :all]
       [clojure.string :as str]
       [jepsen [cli :as cli]
-       [control :as c]
-       [db :as db]
-       [tests :as tests]]
+              [control :as c]
+              [db :as db]
+              [client :as client]
+              [generator :as gen]
+              [tests :as tests]]
       [jepsen.control.util :as cu]
       [jepsen.os.debian :as debian]))
+
+
+(defn r   [_ _] {:type :invoke, :f :read, :value nil})
+(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
+(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+
+(defn parse-long
+      "Parses a string to a Long. Passes through `nil`."
+      [s]
+      (when s (Long/parseLong s)))
+
+(defrecord Client [conn]
+           client/Client
+           (open! [this test node]
+                  (assoc this :conn (com.rabbitmq.jepsen.Utils/createClient node)))
+
+           (setup! [this test])
+
+           (invoke! [this test op]
+                    (case (:f op)
+                          :read (assoc op :type :ok, :value (parse-long (com.rabbitmq.jepsen.Utils/get conn "foo")))
+                          :write (do (com.rabbitmq.jepsen.Utils/write conn "foo" (:value op))
+                                     (assoc op :type, :ok))
+                          :cas (let [[old new] (:value op)]
+                                    (assoc op :type (if (com.rabbitmq.jepsen.Utils/cas conn "foo" old new)
+                                                      :ok
+                                                      :fail)))
+                          ))
+
+           (teardown! [this test])
+
+           (close! [_ test]))
 
 
 (def dir "/opt/rakvstore")
@@ -29,7 +63,6 @@
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
 (def binary "/opt/rakvstore/bin/ra_kv_store_release")
-
 
 (defn db
       "RA KV Store."
@@ -68,7 +101,13 @@
              opts
              {:name "rakvstore"
               :os   debian/os
-              :db   (db)}))
+              :db   (db)
+              :client (Client. nil)
+              :generator (->> (gen/mix [r w cas])
+                              (gen/stagger 1)
+                              (gen/nemesis nil)
+                              (gen/time-limit 15))}))
+              ;}))
 
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for
