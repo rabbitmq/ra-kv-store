@@ -33,3 +33,4 @@ _rel/
 *.iml
 
 .vagrant
+*.tar.gz
