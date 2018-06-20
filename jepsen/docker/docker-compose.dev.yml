@@ -1,0 +1,20 @@
+version: '2'
+services:
+  control:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
+  n1:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+  n2:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+  n3:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+  n4:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+  n5:
+    volumes:
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen

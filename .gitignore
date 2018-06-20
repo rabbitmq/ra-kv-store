@@ -32,3 +32,4 @@ _build
 _rel/
 *.iml
 
+.vagrant

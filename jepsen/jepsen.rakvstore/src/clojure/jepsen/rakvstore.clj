@@ -62,6 +62,8 @@
            (close! [_ test]))
 
 
+(def releasefile "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz")
+;(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
 (def dir "/opt/rakvstore")
 (def logDir "/opt/rakvstore/log")
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
@@ -77,7 +79,7 @@
              (setup! [_ test node]
                      (info node "installing RA KV Store")
                      (c/su
-                       (let [url (str "file:///vagrant/ra_kv_store_release-1.tar.gz")]
+                       (let [url releasefile]
                             (cu/install-archive! url dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
                             (c/exec :echo configuration :| :tee configurationFile)

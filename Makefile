@@ -18,6 +18,6 @@ dep_cowboy_commit = 2.4.0
 DEP_PLUGINS = cowboy
 
 rel-jepsen: rel
-	cp _rel/ra_kv_store_release/*.tar.gz jepsen.rakvstore/
+	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 
 include erlang.mk

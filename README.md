@@ -65,6 +65,10 @@ server: Cowboy
 2
 ```
 
+# Jepsen test
+
+See the [readme](jepsen/jepsen.rakvstore/README.md).
+
 # License
 
 RA KV Store is [Apache 2.0 licensed](http://www.apache.org/licenses/LICENSE-2.0.html).
