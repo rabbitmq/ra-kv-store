@@ -16,7 +16,7 @@
 -module(ra_kv_store).
 -behaviour(ra_machine).
 
--export([init/1, apply/3, write/3, read/2, cas/4]).
+-export([init/1, apply/4, write/3, read/2, cas/4]).
 
 write(ServerReference, Key, Value) ->
     {ok, _, _} = ra:send_and_await_consensus(ServerReference, {write, Key, Value}),
@@ -32,12 +32,9 @@ cas(ServerReference, Key, ExpectedValue, NewValue) ->
 
 init(_Config) -> {#{}, []}.
 
-apply(_Index, {write, Key, Value}, State) ->
+apply(_Index, {write, Key, Value}, _, State) ->
     {maps:put(Key, Value, State), []};
-apply(_Index, {read, Key}, State) ->
-    Reply = maps:get(Key, State, undefined),
-    {State, [], Reply};
-apply(_Index, {cas, Key, ExpectedValue, NewValue}, State) ->
+apply(_Index, {cas, Key, ExpectedValue, NewValue}, _, State) ->
     case maps:get(Key, State, undefined) of
         ExpectedValue ->
             {maps:put(Key, NewValue, State), [], ExpectedValue};
