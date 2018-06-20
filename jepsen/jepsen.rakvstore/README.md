@@ -10,15 +10,21 @@ ra-kv-store $ make rel-jepsen
 cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 ```
 
-`cd` into the `jepsen/docker` directory:
+`cd` into the `jepsen` directory and set the `JEPSEN_ROOT` environment variable:
 ```
-ra-kv-store $ cd jepsen/docker
+ra-kv-store $ cd jepsen
+jepsen $ export JEPSEN_ROOT=$(pwd)
+```
+
+`cd` into the `docker` directory:
+```
+jepsen $ cd docker
 ```
 
 Start the containers:
 
 ```
-docker $ ./up --dev
+docker $ ./up.sh --dev
 ```
 
 Connect to the Jepsen control container:
@@ -64,7 +70,14 @@ Start up the VMs (this may take a few minutes, especially the first time):
 jepsen.rakvstore $ vagrant up
 ```
 
-Once the VMs are up, you can start a Jepsen test:
+Make sure the appropriate release file will be used by updating the `src/clojure/jepsen/rakvstore.clj` file:
+
+```
+;(def releasefile "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz") // commented out
+(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
+```
+
+You can now start the Jepsen test:
 
 ```
 jepsen.rakvstore $ lein run test --node n1 --node n2 --node n3 \
