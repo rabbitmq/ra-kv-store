@@ -17,12 +17,14 @@
     (:require [clojure.tools.logging :refer :all]
       [clojure.string :as str]
       [knossos.model :as model]
+      [slingshot.slingshot :refer [try+]]
       [jepsen [cli :as cli]
               [checker :as checker]
               [control :as c]
               [db :as db]
               [client :as client]
               [nemesis :as nemesis]
+              [independent :as independent]
               [generator :as gen]
               [tests :as tests]]
       [jepsen.checker.timeline :as timeline]
@@ -46,17 +48,25 @@
 
            (setup! [this test])
 
-           (invoke! [this test op]
-                    (case (:f op)
-                          :read (assoc op :type :ok, :value (parse-long (com.rabbitmq.jepsen.Utils/get conn "foo")))
-                          :write (do (com.rabbitmq.jepsen.Utils/write conn "foo" (:value op))
-                                     (assoc op :type, :ok))
-                          :cas (let [[old new] (:value op)]
-                                    (assoc op :type (if (com.rabbitmq.jepsen.Utils/cas conn "foo" old new)
-                                                      :ok
-                                                      :fail)))
-                          ))
+           (invoke! [_ test op]
+                    (let [[k v] (:value op)]
+                         (try+
+                           (case (:f op)
+                                 :read  (assoc op :type :ok, :value (independent/tuple k (parse-long (com.rabbitmq.jepsen.Utils/get conn k))))
+                                 :write (do (com.rabbitmq.jepsen.Utils/write conn k v)
+                                            (assoc op :type, :ok))
+                                 :cas (let [[old new] v]
+                                           (assoc op :type (if (com.rabbitmq.jepsen.Utils/cas conn k old new)
+                                                             :ok
+                                                             :fail)))
+                                 )
+                           (catch java.io.IOException _
+                             (assoc op
+                                    :type  (if (= :read (:f op)) :fail :info)
+                                    :error :ioexception))
+                           ))
 
+                    )
            (teardown! [this test])
 
            (close! [_ test]))
@@ -105,9 +115,23 @@
                         [logfile erllogfile])
              ))
 
+(def cli-opts
+  "Additional command line options."
+  [["-r" "--rate HZ" "Approximate number of requests per second, per thread."
+    :default  10
+    :parse-fn read-string
+    :validate [#(and (number? %) (pos? %)) "Must be a positive number"]]
+   [nil "--ops-per-key NUM" "Maximum number of operations on any given key."
+    :default  100
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]])
+
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
-      :concurrency ...), constructs a test map."
+      :concurrency ...), constructs a test map. Special options:
+
+        :rate         Approximate number of requests per second, per thread
+        :ops-per-key  Maximum number of operations allowed on any given key."
       [opts]
       (merge tests/noop-test
              opts
@@ -117,12 +141,19 @@
               :model (model/cas-register)
               :checker (checker/compose
                          {:perf      (checker/perf)
-                          :linear    (checker/linearizable)
-                          :timeline  (timeline/html)})
+                          :indep (independent/checker
+                                   (checker/compose
+                                     {:timeline (timeline/html)
+                                      :linear (checker/linearizable)}))})
               :client (Client. nil)
               :nemesis    (nemesis/partition-random-halves)
-              :generator (->> (gen/mix [r w cas])
-                              (gen/stagger 1/10)
+              :generator (->> (independent/concurrent-generator
+                                10
+                                (range)
+                                (fn [k]
+                                    (->> (gen/mix [r w cas])
+                                         (gen/stagger (/ (:rate opts)))
+                                         (gen/limit (:ops-per-key opts)))))
                               (gen/nemesis
                                 (gen/seq (cycle [(gen/sleep 5)
                                                  {:type :info, :f :start}
@@ -136,5 +167,6 @@
   "Handles command line arguments. Can either run a test, or a web server for
   browsing results."
   [& args]
-  (cli/run! (cli/single-test-cmd {:test-fn rakvstore-test})
+  (cli/run! (cli/single-test-cmd {:test-fn rakvstore-test,
+                                  :opt-spec cli-opts})
             args))
