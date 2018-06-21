@@ -1,7 +1,7 @@
 # Raft-based Key/Value Store
 
-This is a experimental key/value store based on
-[Team RabbitMQ's Raft library](https://github.com/rabbitmq/ra).
+This is a tiny key/value store based on [Ra](https://github.com/rabbitmq/ra) developed
+to be used in certain integration tests. It is not meant to be a general purpose project.
 
 # Usage
 
