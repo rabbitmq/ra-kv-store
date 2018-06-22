@@ -27,6 +27,7 @@
               [independent :as independent]
               [generator :as gen]
               [tests :as tests]]
+      [jepsen.set :as set]
       [jepsen.checker.timeline :as timeline]
       [jepsen.control.util :as cu]
       [jepsen.os.debian :as debian]))
@@ -115,6 +116,27 @@
                         [logfile erllogfile])
              ))
 
+(defn register-workload
+      "Tests linearizable reads, writes, and compare-and-set operations on
+      independent keys."
+      [opts]
+      {:client    (Client. nil)
+       :checker   (independent/checker
+                    (checker/compose
+                      {:linear   (checker/linearizable)
+                       :timeline (timeline/html)}))
+       :generator (independent/concurrent-generator
+                    10
+                    (range)
+                    (fn [k]
+                        (->> (gen/mix [r w cas])
+                             (gen/limit (:ops-per-key opts)))))})
+
+(def workloads
+  "A map of workload names to functions that construct workloads, given opts."
+  {"set"      set/workload
+   "register" register-workload})
+
 (def cli-opts
   "Additional command line options."
   [["-r" "--rate HZ" "Approximate number of requests per second, per thread."
@@ -124,28 +146,32 @@
    [nil "--ops-per-key NUM" "Maximum number of operations on any given key."
     :default  100
     :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]])
+    :validate [pos? "Must be a positive integer."]]
+   ["-w" "--workload NAME" "What workload should we run?"
+    :missing  (str "--workload " (cli/one-of workloads))
+    :validate [workloads (cli/one-of workloads)]]
+   ])
+
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
       :concurrency ...), constructs a test map. Special options:
 
         :rate         Approximate number of requests per second, per thread
-        :ops-per-key  Maximum number of operations allowed on any given key."
+        :ops-per-key  Maximum number of operations allowed on any given key.
+        :workload     Type of workload."
       [opts]
+      (let [workload  ((get workloads (:workload opts)) opts)]
       (merge tests/noop-test
              opts
-             {:name "rakvstore"
+             {:name (str (name (:workload opts)))
               :os   debian/os
               :db   (db)
               :model (model/cas-register)
-              :checker (checker/compose
-                         {:perf      (checker/perf)
-                          :indep (independent/checker
-                                   (checker/compose
-                                     {:timeline (timeline/html)
-                                      :linear (checker/linearizable)}))})
-              :client (Client. nil)
+              :checker    (checker/compose
+                            {:perf     (checker/perf)
+                             :workload (:checker workload)})
+              :client     (:client workload)
               :nemesis    (nemesis/partition-random-halves)
               :generator (->> (independent/concurrent-generator
                                 10
@@ -160,7 +186,24 @@
                                                  (gen/sleep 5)
                                                  {:type :info, :f :stop}]))
                                 )
-                              (gen/time-limit (:time-limit opts)))}))
+                              (gen/time-limit (:time-limit opts)))}
+             {:client    (:client workload)
+              :checker   (:checker workload)
+              :generator (gen/phases
+                           (->> (:generator workload)
+                                (gen/stagger (/ (:rate opts)))
+                                (gen/nemesis
+                                  (gen/seq (cycle [(gen/sleep 5)
+                                                   {:type :info, :f :start}
+                                                   (gen/sleep 5)
+                                                   {:type :info, :f :stop}])))
+                                (gen/time-limit (:time-limit opts)))
+                           (gen/log "Healing cluster")
+                           (gen/nemesis (gen/once {:type :info, :f :stop}))
+                           (gen/log "Waiting for recovery")
+                           (gen/sleep 10)
+                           (gen/clients (:final-generator workload)))}
+             )))
               ;}))
 
 (defn -main

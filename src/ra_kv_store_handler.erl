@@ -39,8 +39,15 @@ init(Req0=#{method := <<"PUT">>}, State) ->
     ServerReference = proplists:get_value(server_reference, State),
     Key = cowboy_req:binding(key, Req0),
     {ok, KeyValues, Req1} = cowboy_req:read_urlencoded_body(Req0),
-    Value = proplists:get_value(<<"value">>, KeyValues),
-    Expected = proplists:get_value(<<"expected">>, KeyValues),
+    Value = case proplists:get_value(<<"value">>, KeyValues) of
+        <<"">> -> undefined;
+        NotNullValue -> NotNullValue
+    end,
+    Expected = case proplists:get_value(<<"expected">>, KeyValues) of
+        <<"">> -> undefined;
+        NotNullExpectedValue -> NotNullExpectedValue
+    end,
+
     Req = case Expected of
         undefined ->
             ok = ra_kv_store:write(ServerReference, Key, Value),

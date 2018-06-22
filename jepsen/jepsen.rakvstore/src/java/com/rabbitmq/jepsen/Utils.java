@@ -19,12 +19,14 @@ package com.rabbitmq.jepsen;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -77,6 +79,23 @@ public class Utils {
         return client.cas(key, oldValue, newValue);
     }
 
+    public static void addToSet(Client client, Object key, Object value) throws Exception {
+        client.addToSet(key, value);
+    }
+
+    public static String getSet(Client client, Object key) throws Exception {
+        return client.getSet(key);
+    }
+
+    static Object get(Map<Object, Object> map, String keyStringValue) {
+        for (Map.Entry<Object, Object> entry : map.entrySet()) {
+            if (keyStringValue.equals(entry.getKey().toString())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     public static class Client {
 
         private final String node;
@@ -92,11 +111,10 @@ public class Utils {
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 try {
-                    return response(conn);
+                    return response(conn.getInputStream());
                 } catch (FileNotFoundException e) {
                     return null;
                 }
-
             } finally {
                 if (conn != null) {
                     conn.disconnect();
@@ -143,10 +161,36 @@ public class Utils {
             }
         }
 
-        private String response(HttpURLConnection con) throws IOException {
+        public void addToSet(Object key, Object value) throws Exception {
+            retry(() -> {
+                String currentValue = get(key);
+                if (currentValue == null || currentValue.isEmpty()) {
+                    return cas(key.toString(), "", value.toString());
+                }
+                String valueAsString = value.toString();
+                for (String valueInSet : currentValue.split(" ")) {
+                    if (valueAsString.equals(valueInSet)) {
+                        // already in the set, nothing to do
+                        return true;
+                    }
+                }
+                return cas(key, currentValue, currentValue + " " + valueAsString);
+            });
+        }
+
+        private void retry(Callable<Boolean> operation) throws Exception {
+            boolean done = operation.call();
+            while (!done) {
+                Thread.sleep(
+                    100); // same as in https://github.com/aphyr/verschlimmbesserung/blob/498fd20ca39c52f6f4506dc281d6af9920791342/src/verschlimmbesserung/core.clj#L41-L44
+                done = operation.call();
+            }
+        }
+
+        private String response(InputStream inputStream) throws IOException {
             StringBuilder content = new StringBuilder();
             try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()))) {
+                new InputStreamReader(inputStream))) {
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     content.append(inputLine);
@@ -154,14 +198,9 @@ public class Utils {
             }
             return content.toString();
         }
-    }
 
-    static Object get(Map<Object, Object> map, String keyStringValue) {
-        for (Map.Entry<Object, Object> entry : map.entrySet()) {
-            if (keyStringValue.equals(entry.getKey().toString())) {
-                return entry.getValue();
-            }
+        public String getSet(Object key) throws Exception {
+            return "#{" + get(key) + "}";
         }
-        return null;
     }
 }

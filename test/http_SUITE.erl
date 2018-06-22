@@ -89,4 +89,17 @@ http_handler(_Config) ->
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=3&expected=2"}, [], []),
 
+    %% test with empty values meant to reset a key
+    {ok, {{_, 204, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value=&expected=3"}, [], []),
+
+    {ok, {{_, 404, _}, _, _}} =
+        httpc:request(get, {Url, []}, [], []),
+
+    {ok, {{_, 204, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value=1&expected="}, [], []),
+
+    {ok, {{_, 200, _}, _, "1"}} =
+        httpc:request(get, {Url, []}, [], []),
+
     ok.
