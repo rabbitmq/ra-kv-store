@@ -85,6 +85,17 @@ jepsen.rakvstore $ lein run test --node n1 --node n2 --node n3 \
   --test-count 1 --time-limit 15
 ```
 
+## Client
+
+Jepsen tests access the KV through a Java-based client. This client handles HTTP connections, requests,
+and responses, as well appropriate logic for the tests (error handling, value swapping). The client is
+compiled as part as of the Jepsen. The client and its corresponding unit tests can be modified and the
+changes can be checked by running Maven:
+
+```
+./mvnw clean test
+```
+
 ## License
 
 RA KV Store is [Apache 2.0 licensed](http://www.apache.org/licenses/LICENSE-2.0.html).

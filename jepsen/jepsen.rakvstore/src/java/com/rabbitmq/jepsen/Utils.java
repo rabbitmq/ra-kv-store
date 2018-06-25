@@ -161,6 +161,16 @@ public class Utils {
             }
         }
 
+        /**
+         * Add a value to a set.
+         * The uniqueness of the value in the set is enforced
+         * thanks to the CAS operation (the initial value of the
+         * set is checked when trying to update the set with the new
+         * value).
+         * @param key
+         * @param value
+         * @throws Exception
+         */
         public void addToSet(Object key, Object value) throws Exception {
             retry(() -> {
                 String currentValue = get(key);
@@ -199,6 +209,13 @@ public class Utils {
             return content.toString();
         }
 
+        /**
+         * Return value wrapped in <code>#{ }</code>.
+         * This allows parsing it as a Clojure set.
+         * @param key
+         * @return
+         * @throws Exception
+         */
         public String getSet(Object key) throws Exception {
             return "#{" + get(key) + "}";
         }
