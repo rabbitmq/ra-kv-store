@@ -56,4 +56,9 @@ kv_store(_Config) ->
     2 = ra_kv_store:cas(ra_kv1, 1, 2, 4),
     4 = ra_kv_store:cas(ra_kv1, 1, 3, 6),
     4 = ra_kv_store:read(ra_kv1, 1),
+
+    undefined = ra_kv_store:cas(ra_kv1, 2, undefined, 1),
+    1 = ra_kv_store:read(ra_kv1, 2),
+    1 = ra_kv_store:cas(ra_kv1, 2, undefined, 3),
+    1 = ra_kv_store:read(ra_kv1, 2),
     ok.

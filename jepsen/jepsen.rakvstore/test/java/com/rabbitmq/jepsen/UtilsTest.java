@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -96,6 +97,7 @@ public class UtilsTest {
 
     @Test
     public void writeGet() throws Exception {
+        assertNull(client.get(KEY));
         Utils.write(client, KEY, "23");
         assertEquals("23", client.get(KEY));
     }
@@ -108,6 +110,14 @@ public class UtilsTest {
         assertEquals("2", client.get(KEY));
         assertFalse(client.cas(KEY, "1", "2"));
         assertEquals("2", client.get(KEY));
+    }
+
+    @Test
+    public void casWithNull() throws Exception {
+        assertTrue(client.cas(KEY, "", "1"));
+        assertEquals("1", client.get(KEY));
+        assertFalse(client.cas(KEY, "", "2"));
+        assertEquals("1", client.get(KEY));
     }
 
     @Test
@@ -142,6 +152,7 @@ public class UtilsTest {
      * Test the addToSet logic.
      * This is a simplified and local version of the
      * set workload in the Jepsen tests.
+     *
      * @throws Exception
      */
     @Test

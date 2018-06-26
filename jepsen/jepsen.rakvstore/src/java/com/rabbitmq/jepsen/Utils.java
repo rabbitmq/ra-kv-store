@@ -26,7 +26,12 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -98,6 +103,9 @@ public class Utils {
 
     public static class Client {
 
+        static final BlockingQueue<RequestAttempt> attempts = new ArrayBlockingQueue<>(10_000);
+        static final BlockingQueue<CasRequest> casRequests = new ArrayBlockingQueue<>(10_000);
+
         private final String node;
 
         public Client(String node) {
@@ -141,6 +149,8 @@ public class Utils {
         }
 
         boolean cas(Object key, Object oldValue, Object newValue) throws Exception {
+            CasRequest casRequest = new CasRequest(this.node, oldValue.toString(), newValue.toString());
+            casRequests.put(casRequest);
             URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
             HttpURLConnection conn = null;
             try {
@@ -151,8 +161,10 @@ public class Utils {
                     out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
                 }
                 conn.getInputStream();
+                casRequest.statusCode(conn.getResponseCode());
                 return true;
             } catch (Exception e) {
+                casRequest.statusCode(conn.getResponseCode());
                 return false;
             } finally {
                 if (conn != null) {
@@ -167,24 +179,51 @@ public class Utils {
          * thanks to the CAS operation (the initial value of the
          * set is checked when trying to update the set with the new
          * value).
+         *
          * @param key
          * @param value
          * @throws Exception
          */
         public void addToSet(Object key, Object value) throws Exception {
+            RequestAttempt requestAttempt = new RequestAttempt(this.node, value.toString());
+            attempts.offer(requestAttempt, 10, TimeUnit.SECONDS);
             retry(() -> {
+                requestAttempt.step("in retry loop");
+                // ""
                 String currentValue = get(key);
                 if (currentValue == null || currentValue.isEmpty()) {
-                    return cas(key.toString(), "", value.toString());
+                    requestAttempt.step("no value in the set");
+                    requestAttempt.markAttempt();
+                    requestAttempt.step("sending cas operation for empty set");
+                    boolean result = cas(key.toString(), "", value.toString());
+                    requestAttempt.step("cas operation returned " + result + " for empty set");
+                    if (result) {
+                        requestAttempt.markSuccess();
+                    }
+                    requestAttempt.step("returning " + result);
+                    return result;
                 }
+                // "1 2 3 4 5"
                 String valueAsString = value.toString();
+                requestAttempt.step("checking value to add is not already in the set");
                 for (String valueInSet : currentValue.split(" ")) {
                     if (valueAsString.equals(valueInSet)) {
+                        requestAttempt.markAlreadyInSet();
+                        requestAttempt.step("value already in the set, returning true");
                         // already in the set, nothing to do
                         return true;
                     }
                 }
-                return cas(key, currentValue, currentValue + " " + valueAsString);
+                requestAttempt.markAttempt();
+                requestAttempt.step("value not already in the set");
+                requestAttempt.step("sending cas option");
+                boolean result = cas(key, currentValue, currentValue + " " + valueAsString);
+                requestAttempt.step("cas operation returned " + result);
+                if (result) {
+                    requestAttempt.markSuccess();
+                }
+                requestAttempt.step("returning " + result);
+                return result;
             });
         }
 
@@ -212,12 +251,83 @@ public class Utils {
         /**
          * Return value wrapped in <code>#{ }</code>.
          * This allows parsing it as a Clojure set.
+         *
          * @param key
          * @return
          * @throws Exception
          */
         public String getSet(Object key) throws Exception {
             return "#{" + get(key) + "}";
+        }
+    }
+
+    static class RequestAttempt {
+
+        final String node;
+        final String value;
+        final AtomicLong attempts = new AtomicLong(0);
+        final AtomicLong successes = new AtomicLong(0);
+        final AtomicLong alreadyInSet = new AtomicLong(0);
+        final BlockingQueue<String> steps = new ArrayBlockingQueue<>(100);
+
+        RequestAttempt(String node, String value) {
+            this.node = node;
+            this.value = value;
+        }
+
+        void markAttempt() {
+            this.attempts.incrementAndGet();
+        }
+
+        void markSuccess() {
+            this.successes.incrementAndGet();
+        }
+
+        void markAlreadyInSet() {
+            this.alreadyInSet.incrementAndGet();
+        }
+
+        void step(String step) throws InterruptedException {
+            this.steps.offer(step, 1, TimeUnit.SECONDS);
+        }
+
+        @Override
+        public String toString() {
+            return "RequestAttempt{" +
+                "node='" + node + '\'' +
+                ", value='" + value + '\'' +
+                ", attempts=" + attempts +
+                ", successes=" + successes +
+                ", alreadyInSet=" + alreadyInSet +
+                ", steps=" + steps +
+                '}';
+        }
+    }
+
+    static class CasRequest {
+
+        private final String node, expectedValue, newValue;
+
+        private final AtomicInteger statusCode = new AtomicInteger(-1);
+
+        CasRequest(String node, String expectedValue, String newValue) {
+            this.node = node;
+            this.expectedValue = expectedValue;
+            this.newValue = newValue;
+        }
+
+        void statusCode(int status) {
+            statusCode.set(status);
+        }
+
+        @Override
+        public String toString() {
+            return "CasRequest{" +
+                "node='" + node + '\'' +
+                ", expectedValue='" + expectedValue + '\'' +
+                ", newValue='" + newValue + '\'' +
+                ", statusCode=" + statusCode +
+                '}';
         }
     }
 }

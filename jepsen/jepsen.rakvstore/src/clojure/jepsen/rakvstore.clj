@@ -90,6 +90,7 @@
              (setup! [_ test node]
                      (info node "installing RA KV Store")
                      (c/su
+                       (c/exec :rm :-rf "/tmp/ra_kv_store")
                        (let [url releasefile]
                             (cu/install-archive! url dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
@@ -108,7 +109,6 @@
                         (c/su
                           (c/exec binary "stop")
                           (c/exec :rm :-rf dir)
-                          (c/exec :rm :-rf "/tmp/ra_kv_store")
                           )
                         )
              db/LogFiles

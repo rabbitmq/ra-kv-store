@@ -102,4 +102,24 @@ http_handler(_Config) ->
     {ok, {{_, 200, _}, _, "1"}} =
         httpc:request(get, {Url, []}, [], []),
 
+    %% ensure expected value in CAS can be empty
+
+    {ok, {{_, 204, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value="}, [], []),
+
+    {ok, {{_, 404, _}, _, _}} =
+        httpc:request(get, {Url, []}, [], []),
+
+    {ok, {{_, 204, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value=1&expected="}, [], []),
+
+    {ok, {{_, 200, _}, _, "1"}} =
+        httpc:request(get, {Url, []}, [], []),
+
+    {ok, {{_, 409, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value=2&expected="}, [], []),
+
+    {ok, {{_, 200, _}, _, "1"}} =
+        httpc:request(get, {Url, []}, [], []),
+
     ok.
