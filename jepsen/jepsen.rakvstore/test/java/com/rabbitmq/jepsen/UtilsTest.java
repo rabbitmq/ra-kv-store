@@ -181,7 +181,7 @@ public class UtilsTest {
             Thread.sleep(50L);
         }
         executorService.shutdown();
-        assertTrue(executorService.awaitTermination(1, TimeUnit.SECONDS));
+        assertTrue(executorService.awaitTermination(5, TimeUnit.SECONDS));
         Set<String> referenceSet = referenceMap.keySet();
 
         List<Integer> setInDbAsList = asList(client.get(KEY).split(" "))

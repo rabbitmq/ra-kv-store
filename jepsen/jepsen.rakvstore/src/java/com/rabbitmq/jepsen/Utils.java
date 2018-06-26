@@ -32,6 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +40,9 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("unchecked")
 public class Utils {
+
+    // static JepsenTestLog LOG = new DefaultJepsenTestLog();
+    static JepsenTestLog LOG = new NoOpJepsenTestLog();
 
     public static String configuration(Map<Object, Object> test, Object currentNode) {
         List<Object> nodesObj = (List<Object>) get(test, ":nodes");
@@ -101,10 +105,69 @@ public class Utils {
         return null;
     }
 
-    public static class Client {
+    interface JepsenTestLog {
 
-        static final BlockingQueue<RequestAttempt> attempts = new ArrayBlockingQueue<>(10_000);
-        static final BlockingQueue<CasRequest> casRequests = new ArrayBlockingQueue<>(10_000);
+        RequestAttempt requestAttempt(Object node, Object value);
+
+        void step(RequestAttempt attempt, Supplier<String> message) throws InterruptedException;
+
+        void attempt(RequestAttempt attempt);
+
+        void success(RequestAttempt attempt);
+
+        void alreadyInSet(RequestAttempt attempt);
+
+        CasRequest casRequest(Object node, Object expectedValue, Object newValue);
+
+        void statusCode(CasRequest request, int status);
+
+        void dump();
+    }
+
+    static class NoOpJepsenTestLog implements JepsenTestLog {
+
+        @Override
+        public RequestAttempt requestAttempt(Object node, Object value) {
+            return null;
+        }
+
+        @Override
+        public void step(RequestAttempt attempt, Supplier<String> message) throws InterruptedException {
+
+        }
+
+        @Override
+        public void attempt(RequestAttempt attempt) {
+
+        }
+
+        @Override
+        public void success(RequestAttempt attempt) {
+
+        }
+
+        @Override
+        public void alreadyInSet(RequestAttempt attempt) {
+
+        }
+
+        @Override
+        public CasRequest casRequest(Object node, Object expectedValue, Object newValue) {
+            return null;
+        }
+
+        @Override
+        public void statusCode(CasRequest request, int status) {
+
+        }
+
+        @Override
+        public void dump() {
+
+        }
+    }
+
+    public static class Client {
 
         private final String node;
 
@@ -149,8 +212,7 @@ public class Utils {
         }
 
         boolean cas(Object key, Object oldValue, Object newValue) throws Exception {
-            CasRequest casRequest = new CasRequest(this.node, oldValue.toString(), newValue.toString());
-            casRequests.put(casRequest);
+            CasRequest request = LOG.casRequest(node, oldValue, newValue);
             URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
             HttpURLConnection conn = null;
             try {
@@ -161,10 +223,10 @@ public class Utils {
                     out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
                 }
                 conn.getInputStream();
-                casRequest.statusCode(conn.getResponseCode());
+                LOG.statusCode(request, conn.getResponseCode());
                 return true;
             } catch (Exception e) {
-                casRequest.statusCode(conn.getResponseCode());
+                LOG.statusCode(request, conn.getResponseCode());
                 return false;
             } finally {
                 if (conn != null) {
@@ -185,44 +247,43 @@ public class Utils {
          * @throws Exception
          */
         public void addToSet(Object key, Object value) throws Exception {
-            RequestAttempt requestAttempt = new RequestAttempt(this.node, value.toString());
-            attempts.offer(requestAttempt, 10, TimeUnit.SECONDS);
+            RequestAttempt requestAttempt = LOG.requestAttempt(node, value);
             retry(() -> {
-                requestAttempt.step("in retry loop");
-                // ""
+                LOG.step(requestAttempt, () -> "in retry loop");
+                // currentValue is ""
                 String currentValue = get(key);
                 if (currentValue == null || currentValue.isEmpty()) {
-                    requestAttempt.step("no value in the set");
-                    requestAttempt.markAttempt();
-                    requestAttempt.step("sending cas operation for empty set");
+                    LOG.step(requestAttempt, () -> "no value in the set");
+                    LOG.attempt(requestAttempt);
+                    LOG.step(requestAttempt, () -> "sending cas operation for empty set");
                     boolean result = cas(key.toString(), "", value.toString());
-                    requestAttempt.step("cas operation returned " + result + " for empty set");
+                    LOG.step(requestAttempt, () -> "cas operation returned " + result + " for empty set");
                     if (result) {
-                        requestAttempt.markSuccess();
+                        LOG.success(requestAttempt);
                     }
-                    requestAttempt.step("returning " + result);
+                    LOG.step(requestAttempt, () -> "returning " + result);
                     return result;
                 }
-                // "1 2 3 4 5"
+                // currentValue is "1 2 3 4 5"
                 String valueAsString = value.toString();
-                requestAttempt.step("checking value to add is not already in the set");
+                LOG.step(requestAttempt, () -> "checking value to add is not already in the set");
                 for (String valueInSet : currentValue.split(" ")) {
                     if (valueAsString.equals(valueInSet)) {
-                        requestAttempt.markAlreadyInSet();
-                        requestAttempt.step("value already in the set, returning true");
+                        LOG.alreadyInSet(requestAttempt);
+                        LOG.step(requestAttempt, () -> "value already in the set, returning true");
                         // already in the set, nothing to do
                         return true;
                     }
                 }
-                requestAttempt.markAttempt();
-                requestAttempt.step("value not already in the set");
-                requestAttempt.step("sending cas option");
+                LOG.attempt(requestAttempt);
+                LOG.step(requestAttempt, () -> "value not already in the set");
+                LOG.step(requestAttempt, () -> "sending cas option");
                 boolean result = cas(key, currentValue, currentValue + " " + valueAsString);
-                requestAttempt.step("cas operation returned " + result);
+                LOG.step(requestAttempt, () -> "cas operation returned " + result);
                 if (result) {
-                    requestAttempt.markSuccess();
+                    LOG.success(requestAttempt);
                 }
-                requestAttempt.step("returning " + result);
+                LOG.step(requestAttempt, () -> "returning " + result);
                 return result;
             });
         }
@@ -257,6 +318,7 @@ public class Utils {
          * @throws Exception
          */
         public String getSet(Object key) throws Exception {
+            LOG.dump();
             return "#{" + get(key) + "}";
         }
     }
@@ -301,6 +363,58 @@ public class Utils {
                 ", alreadyInSet=" + alreadyInSet +
                 ", steps=" + steps +
                 '}';
+        }
+    }
+
+    static class DefaultJepsenTestLog implements JepsenTestLog {
+
+        // increase the capacity of those queues for long tests, when log is enabled
+        final BlockingQueue<RequestAttempt> attempts = new ArrayBlockingQueue<>(100_000);
+        final BlockingQueue<CasRequest> casRequests = new ArrayBlockingQueue<>(100_000);
+
+        @Override
+        public RequestAttempt requestAttempt(Object node, Object value) {
+            RequestAttempt requestAttempt = new RequestAttempt(node.toString(), value.toString());
+            attempts.add(requestAttempt);
+            return requestAttempt;
+        }
+
+        @Override
+        public void step(RequestAttempt attempt, Supplier<String> message) throws InterruptedException {
+            attempt.step(message.get());
+        }
+
+        @Override
+        public void attempt(RequestAttempt attempt) {
+            attempt.markAttempt();
+        }
+
+        @Override
+        public void success(RequestAttempt attempt) {
+            attempt.markSuccess();
+        }
+
+        @Override
+        public void alreadyInSet(RequestAttempt attempt) {
+            attempt.markAlreadyInSet();
+        }
+
+        @Override
+        public CasRequest casRequest(Object node, Object expectedValue, Object newValue) {
+            CasRequest request = new CasRequest(node.toString(), expectedValue.toString(), newValue.toString());
+            casRequests.add(request);
+            return request;
+        }
+
+        @Override
+        public void statusCode(CasRequest request, int status) {
+            request.statusCode(status);
+        }
+
+        @Override
+        public void dump() {
+            System.out.println("REQUESTS: " + attempts);
+            System.out.println("CAS: " + casRequests);
         }
     }
 
