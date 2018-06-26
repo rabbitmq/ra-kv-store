@@ -16,9 +16,11 @@
 
 package com.rabbitmq.jepsen;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,11 +35,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.rabbitmq.jepsen.Utils.erlangNetTickTime;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -93,6 +98,45 @@ public class UtilsTest {
             + "        {server_reference, ra_kv2}\n"
             + "    ]}\n"
             + "].", configuration);
+
+        test = new HashMap<>();
+        test.put(":nodes", asList("n1", "n2", "n3"));
+        test.put(":erlang-net-ticktime", "-1");
+        configuration = Utils.configuration(test, "n2");
+        assertEquals("[\n"
+            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra_kv_store, [\n"
+            + "        {port, 8080},\n"
+            + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
+            + "        {server_reference, ra_kv2}\n"
+            + "    ]}\n"
+            + "].", configuration);
+
+        test = new HashMap<>();
+        test.put(":nodes", asList("n1", "n2", "n3"));
+        test.put(":erlang-net-ticktime", "15");
+        configuration = Utils.configuration(test, "n2");
+        assertEquals("[\n"
+            + "{kernel, [{net_ticktime,  15}]},\n"
+            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra_kv_store, [\n"
+            + "        {port, 8080},\n"
+            + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
+            + "        {server_reference, ra_kv2}\n"
+            + "    ]}\n"
+            + "].", configuration);
+    }
+
+    @Test public void configurationNetTickTime() {
+        assertEquals("", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "-1")));
+        assertEquals("{kernel, [{net_ticktime,  0}]},\n", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "0")));
+        assertEquals("{kernel, [{net_ticktime,  120}]},\n", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "120")));
+        try {
+            erlangNetTickTime(singletonMap(":erlang-net-ticktime", "dummy"));
+            fail();
+        } catch (NumberFormatException e) {
+            // ok
+        }
     }
 
     @Test

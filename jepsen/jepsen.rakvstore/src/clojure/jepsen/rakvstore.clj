@@ -150,6 +150,18 @@
    ["-w" "--workload NAME" "What workload should we run?"
     :missing  (str "--workload " (cli/one-of workloads))
     :validate [workloads (cli/one-of workloads)]]
+   [nil "--erlang-net-ticktime NUM" "Erlang net tick time in seconds (https://www.rabbitmq.com/nettick.html)."
+    :default  -1
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   [nil "--partition-duration NUM" "Partition duration in seconds."
+    :default  5
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   [nil "--working-network-duration NUM" "Working (no partition) network duration in seconds."
+    :default  5
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
    ])
 
 
@@ -157,9 +169,10 @@
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
       :concurrency ...), constructs a test map. Special options:
 
-        :rate         Approximate number of requests per second, per thread
-        :ops-per-key  Maximum number of operations allowed on any given key.
-        :workload     Type of workload."
+        :rate                 Approximate number of requests per second, per thread.
+        :ops-per-key          Maximum number of operations allowed on any given key.
+        :workload             Type of workload.
+        :erlang-net-ticktime  Erlang net tick time."
       [opts]
       (let [workload  ((get workloads (:workload opts)) opts)]
       (merge tests/noop-test
@@ -181,9 +194,9 @@
                                          (gen/stagger (/ (:rate opts)))
                                          (gen/limit (:ops-per-key opts)))))
                               (gen/nemesis
-                                (gen/seq (cycle [(gen/sleep 5)
+                                (gen/seq (cycle [(gen/sleep (:working-network-duration opts))
                                                  {:type :info, :f :start}
-                                                 (gen/sleep 5)
+                                                 (gen/sleep (:partition-duration opts))
                                                  {:type :info, :f :stop}]))
                                 )
                               (gen/time-limit (:time-limit opts)))}
@@ -193,9 +206,9 @@
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
                                 (gen/nemesis
-                                  (gen/seq (cycle [(gen/sleep 5)
+                                  (gen/seq (cycle [(gen/sleep (:working-network-duration opts))
                                                    {:type :info, :f :start}
-                                                   (gen/sleep 5)
+                                                   (gen/sleep (:partition-duration opts))
                                                    {:type :info, :f :stop}])))
                                 (gen/time-limit (:time-limit opts)))
                            (gen/log "Healing cluster")

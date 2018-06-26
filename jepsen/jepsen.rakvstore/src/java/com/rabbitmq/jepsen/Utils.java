@@ -46,6 +46,8 @@ public class Utils {
 
     public static String configuration(Map<Object, Object> test, Object currentNode) {
         List<Object> nodesObj = (List<Object>) get(test, ":nodes");
+        String erlangNetTickTime = get(test, ":erlang-net-ticktime") != null ? erlangNetTickTime(test) : "";
+
         List<String> nodes = nodesObj.stream().map(o -> {
             String node = o.toString();
             String nodeIndex = node.substring(node.length() - 1, node.length());
@@ -56,6 +58,7 @@ public class Utils {
         String nodeIndex = node.substring(node.length() - 1, node.length());
 
         String configuration = String.format("[\n"
+            + erlangNetTickTime
             + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
@@ -65,6 +68,17 @@ public class Utils {
             + "].", String.join(", ", nodes), nodeIndex);
 
         return configuration;
+    }
+
+    static String erlangNetTickTime(Map<Object, Object> test) {
+        Object valueObj = get(test, ":erlang-net-ticktime");
+        String value = valueObj == null ? "" : valueObj.toString();
+        long tickTime = Long.parseLong(value);
+        if (tickTime >= 0) {
+            return String.format("{kernel, [{net_ticktime,  %d}]},\n", tickTime);
+        } else {
+            return "";
+        }
     }
 
     public static String vmArgs() {
