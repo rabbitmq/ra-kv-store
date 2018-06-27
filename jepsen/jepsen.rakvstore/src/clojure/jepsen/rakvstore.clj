@@ -185,34 +185,20 @@
                             {:perf     (checker/perf)
                              :workload (:checker workload)})
               :client     (:client workload)
-              :nemesis    (nemesis/partition-random-halves)
-              :generator (->> (independent/concurrent-generator
-                                10
-                                (range)
-                                (fn [k]
-                                    (->> (gen/mix [r w cas])
-                                         (gen/stagger (/ (:rate opts)))
-                                         (gen/limit (:ops-per-key opts)))))
-                              (gen/nemesis
-                                (gen/seq (cycle [(gen/sleep (:working-network-duration opts))
-                                                 {:type :info, :f :start}
-                                                 (gen/sleep (:partition-duration opts))
-                                                 {:type :info, :f :stop}]))
-                                )
-                              (gen/time-limit (:time-limit opts)))}
-             {:client    (:client workload)
-              :checker   (:checker workload)
+              :nemesis    (nemesis/compose {{:split-start :start
+                                             :split-stop  :stop} (nemesis/partition-random-halves)})
+              ;:nemesis    (nemesis/partition-random-halves)
               :generator (gen/phases
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
                                 (gen/nemesis
                                   (gen/seq (cycle [(gen/sleep (:working-network-duration opts))
-                                                   {:type :info, :f :start}
+                                                   {:type :info, :f :split-start}
                                                    (gen/sleep (:partition-duration opts))
-                                                   {:type :info, :f :stop}])))
+                                                   {:type :info, :f :split-stop}])))
                                 (gen/time-limit (:time-limit opts)))
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}

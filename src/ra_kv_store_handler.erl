@@ -51,13 +51,11 @@ init(Req0=#{method := <<"PUT">>}, State) ->
     Req = case Expected of
         not_present ->
             ok = ra_kv_store:write(ServerReference, Key, Value),
-	    error_logger:info_msg("ra_kv_store: write success. Value ~s~n", [Value]),
             cowboy_req:reply(204, #{}, Req1);
         Expected ->
             ReadValue = ra_kv_store:cas(ServerReference, Key, Expected, Value),
             case ReadValue of
                 Expected ->
-	            error_logger:info_msg("ra_kv_store: cas success. Value ~s~n", [Value]),
                     cowboy_req:reply(204, #{}, Req1);
                 _ ->
                     cowboy_req:reply(409, #{}, ReadValue, Req1)
