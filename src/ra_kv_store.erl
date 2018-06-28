@@ -32,13 +32,42 @@ cas(ServerReference, Key, ExpectedValue, NewValue) ->
 
 init(_Config) -> {#{}, []}.
 
-apply(_Index, {write, Key, Value}, _, State) ->
-    {maps:put(Key, Value, State), []};
-apply(_Index, {cas, Key, ExpectedValue, NewValue}, _, State) ->
-    case maps:get(Key, State, undefined) of
+apply(Index, {write, Key, Value}, _, State) ->
+    NewState = maps:put(Key, Value, State),
+    SideEffects = side_effects(Index, NewState),
+    {NewState, SideEffects};
+apply(Index, {cas, Key, ExpectedValue, NewValue}, _, State) ->
+    {NewState, ReadValue} = case maps:get(Key, State, undefined) of
         ExpectedValue ->
-            {maps:put(Key, NewValue, State), [], ExpectedValue};
-        ReadValue ->
-            {State, [], ReadValue}
+            {maps:put(Key, NewValue, State), ExpectedValue};
+        ValueInStore ->
+            {State, ValueInStore}
+    end,
+    SideEffects = side_effects(Index, NewState),
+    {NewState, SideEffects, ReadValue}.
+
+side_effects(RaftIndex, MachineState) ->
+    case application:get_env(ra_kv_store, release_cursor_every) of
+        undefined ->
+            [];
+        {ok, NegativeOrZero} when NegativeOrZero =< 0 ->
+            [];
+        {ok, Every} ->
+            case release_cursor(RaftIndex, Every) of
+                release_cursor ->
+                    [{release_cursor, RaftIndex, MachineState}];
+                _ ->
+                    []
+            end;
+        _ ->
+            []
+    end.
+
+release_cursor(Index, Every) ->
+    case Index rem Every of
+        0 ->
+            release_cursor;
+        _ ->
+            do_not_release_cursor
     end.
 

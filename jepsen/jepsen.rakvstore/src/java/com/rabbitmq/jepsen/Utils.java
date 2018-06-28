@@ -47,6 +47,8 @@ public class Utils {
     public static String configuration(Map<Object, Object> test, Object currentNode) {
         List<Object> nodesObj = (List<Object>) get(test, ":nodes");
         String erlangNetTickTime = get(test, ":erlang-net-ticktime") != null ? erlangNetTickTime(test) : "";
+        Object releaseCursorEvery = get(test, ":release-cursor-every");
+        releaseCursorEvery = releaseCursorEvery == null ? -1L : Long.parseLong(releaseCursorEvery.toString());
 
         List<String> nodes = nodesObj.stream().map(o -> {
             String node = o.toString();
@@ -57,15 +59,17 @@ public class Utils {
         String node = currentNode.toString();
         String nodeIndex = node.substring(node.length() - 1, node.length());
 
+
         String configuration = String.format("[\n"
             + erlangNetTickTime
             + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [%s]},\n"
-            + "        {server_reference, ra_kv%s}\n"
+            + "        {server_reference, ra_kv%s},\n"
+            + "        {release_cursor_every, %d}\n"
             + "    ]}\n"
-            + "].", String.join(", ", nodes), nodeIndex);
+            + "].", String.join(", ", nodes), nodeIndex, releaseCursorEvery);
 
         return configuration;
     }

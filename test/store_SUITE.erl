@@ -34,6 +34,7 @@ init_per_suite(Config) ->
     application:load(ra),
     WorkDirectory = proplists:get_value(priv_dir, Config),
     ok = application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
+    ok = application:set_env(ra_kv_store, release_cursor_every, 1),
     Config.
 
 end_per_suite(Config) ->

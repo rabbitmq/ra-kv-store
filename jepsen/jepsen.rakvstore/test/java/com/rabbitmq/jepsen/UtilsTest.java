@@ -69,7 +69,8 @@ public class UtilsTest {
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}]},\n"
-            + "        {server_reference, ra_kv0}\n"
+            + "        {server_reference, ra_kv0},\n"
+            + "        {release_cursor_every, -1}\n"
             + "    ]}\n"
             + "].", configuration);
 
@@ -82,12 +83,14 @@ public class UtilsTest {
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}, {ra_kv1, 'kv@192.168.33.11'}, {ra_kv2, 'kv@192.168.33.12'}]},\n"
-            + "        {server_reference, ra_kv0}\n"
+            + "        {server_reference, ra_kv0},\n"
+            + "        {release_cursor_every, -1}\n"
             + "    ]}\n"
             + "].", configuration);
 
         test = new HashMap<>();
         test.put(":nodes", asList("n1", "n2", "n3"));
+        test.put(":release-cursor-every", "10");
         configuration = Utils.configuration(test, "n2");
 
         assertEquals("[\n"
@@ -95,7 +98,8 @@ public class UtilsTest {
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
-            + "        {server_reference, ra_kv2}\n"
+            + "        {server_reference, ra_kv2},\n"
+            + "        {release_cursor_every, 10}\n"
             + "    ]}\n"
             + "].", configuration);
 
@@ -108,7 +112,8 @@ public class UtilsTest {
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
-            + "        {server_reference, ra_kv2}\n"
+            + "        {server_reference, ra_kv2},\n"
+            + "        {release_cursor_every, -1}\n"
             + "    ]}\n"
             + "].", configuration);
 
@@ -122,7 +127,8 @@ public class UtilsTest {
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
-            + "        {server_reference, ra_kv2}\n"
+            + "        {server_reference, ra_kv2},\n"
+            + "        {release_cursor_every, -1}\n"
             + "    ]}\n"
             + "].", configuration);
     }

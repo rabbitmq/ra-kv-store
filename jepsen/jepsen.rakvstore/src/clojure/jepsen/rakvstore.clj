@@ -168,6 +168,10 @@
     :default  5
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
+   [nil "--release-cursor-every NUM" "Release RA cursor every n operations."
+    :default  -1
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
    ])
 
 
@@ -198,7 +202,8 @@
         :rate                 Approximate number of requests per second, per thread.
         :ops-per-key          Maximum number of operations allowed on any given key.
         :workload             Type of workload.
-        :erlang-net-ticktime  Erlang net tick time."
+        :erlang-net-ticktime  Erlang net tick time.
+        :release-cursor-every Release RA cursor every n operations."
       [opts]
       (let [
             workload  ((get workloads (:workload opts)) opts)
