@@ -26,7 +26,7 @@ start(_Type, _Args) ->
     Config = #{},
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
-    ra:start_cluster(ClusterId, Machine, Nodes),
+    start_or_restart_cluster(ClusterId, Machine, Nodes),
 
     Dispatch = cowboy_router:compile([
         {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ServerReference}]}]}
@@ -42,3 +42,14 @@ start(_Type, _Args) ->
 
 stop(_State) ->
     ok.
+
+start_or_restart_cluster(ClusterId, Machine,
+    [FirstNode | RemNodes] = NodeIds) ->
+    case ra_nodes_sup:restart_node(FirstNode) of
+        {ok, _} ->
+            %% restart the rest of the nodes
+            [_ = ra_nodes_sup:restart_node(N) || N <- RemNodes],
+            ok;
+        {error, _} ->
+            ra:start_cluster(ClusterId, Machine, NodeIds)
+    end.
