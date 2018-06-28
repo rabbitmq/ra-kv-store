@@ -26,6 +26,7 @@
               [nemesis :as nemesis]
               [independent :as independent]
               [generator :as gen]
+              [util :as util]
               [tests :as tests]]
       [jepsen.set :as set]
       [jepsen.checker.timeline :as timeline]
@@ -107,7 +108,12 @@
              (teardown! [_ test node]
                         (info node "tearing down RA KV Store")
                         (c/su
-                          (c/exec binary "stop")
+                          (if (not= "" (try
+                                         (c/exec :pgrep :beam)
+                                         (catch RuntimeException e "")))
+                            (c/exec binary "stop")
+                            (do (info node "RA KV Store already stopped")
+                                ))
                           (c/exec :rm :-rf dir)
                           )
                         )
@@ -165,6 +171,26 @@
    ])
 
 
+(defn start!
+      "Start RA KV Store on node."
+      [test node]
+      (c/su
+        (if (not= "" (try
+                       (c/exec :pgrep :beam)
+                       (catch RuntimeException e "")))
+          (info node "RA KV Store already running.")
+          (do (info node "Starting RA KV Store...")
+              (c/exec binary "start")
+              (info node "RA KV Store started"))))
+      :started)
+
+(defn kill!
+      "Kills RA KV store on node."
+      [test node]
+      (util/meh (c/su (c/exec :killall :-9 :erts)))
+      (info node "RA KV Store killed.")
+      :killed)
+
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
       :concurrency ...), constructs a test map. Special options:
@@ -174,7 +200,11 @@
         :workload             Type of workload.
         :erlang-net-ticktime  Erlang net tick time."
       [opts]
-      (let [workload  ((get workloads (:workload opts)) opts)]
+      (let [
+            workload  ((get workloads (:workload opts)) opts)
+            randomNode (rand-nth (:nodes opts))
+
+      ]
       (merge tests/noop-test
              opts
              {:name (str (name (:workload opts)))
@@ -185,20 +215,30 @@
                             {:perf     (checker/perf)
                              :workload (:checker workload)})
               :client     (:client workload)
-              :nemesis    (nemesis/compose {{:split-start :start
-                                             :split-stop  :stop} (nemesis/partition-random-halves)})
-              ;:nemesis    (nemesis/partition-random-halves)
+              :nemesis (nemesis/compose {
+                                         {:split-start :start
+                                          :split-stop  :stop} (nemesis/partition-random-halves)
+                                         {:kill-start  :start
+                                          :kill-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start! kill!)
+                                         })
               :generator (gen/phases
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
+                                (gen/time-limit (:time-limit opts))
                                 (gen/nemesis
-                                  (gen/seq (cycle [(gen/sleep (:working-network-duration opts))
+                                  (gen/seq  (cycle [
+                                                   (gen/sleep (:working-network-duration opts))
                                                    {:type :info, :f :split-start}
                                                    (gen/sleep (:partition-duration opts))
-                                                   {:type :info, :f :split-stop}])))
-                                (gen/time-limit (:time-limit opts)))
+                                                   {:type :info, :f :split-stop}
+                                                   ])
+                                            )
+                                  )
+                                (gen/time-limit (:time-limit opts))
+                                )
                            (gen/log "Healing cluster")
                            (gen/nemesis (gen/once {:type :info, :f :split-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :kill-start}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}
@@ -212,3 +252,4 @@
   (cli/run! (cli/single-test-cmd {:test-fn rakvstore-test,
                                   :opt-spec cli-opts})
             args))
+
