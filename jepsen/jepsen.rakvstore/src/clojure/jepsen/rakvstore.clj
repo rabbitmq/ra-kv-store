@@ -181,7 +181,7 @@
       (c/su
         (if (not= "" (try
                        (c/exec :pgrep :beam)
-                       (catch RuntimeException e "")))
+                       (catch RuntimeException _ "")))
           (info node "RA KV Store already running.")
           (do (info node "Starting RA KV Store...")
               (c/exec binary "start")
@@ -193,6 +193,28 @@
       [test node]
       (util/meh (c/su (c/exec :killall :-9 :erts)))
       (info node "RA KV Store killed.")
+      :killed)
+
+(defn start-kill-erlang-process!
+      "Start for Erlang process killer (no-op)."
+      [test node]
+      (info node "Called start of Erlang process killer (no-op)")
+      :started)
+
+(defn kill-erlang-process!
+      "Kills a random RA Erlang process"
+      [test node]
+      (let [
+            ; FIXME looks loke the ra_log_segment_writer isn't killed (doesn't show up in the logs)
+            erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
+            erlangEval (str "eval 'exit(whereis(" erlangProcess "), killed_by_jepsen).'")
+            ]
+         (c/su
+           (info node "Killing" erlangProcess "Erlang process")
+           (c/exec* binary erlangEval)
+           )
+
+        (info node erlangProcess "Erlang process killed" erlangEval))
       :killed)
 
 (defn rakvstore-test
@@ -225,6 +247,8 @@
                                           :split-stop  :stop} (nemesis/partition-random-halves)
                                          {:kill-start  :start
                                           :kill-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start! kill!)
+                                         {:kill-erlang-process-start  :start
+                                          :kill-erlang-process-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start-kill-erlang-process! kill-erlang-process!)
                                          })
               :generator (gen/phases
                            (->> (:generator workload)
@@ -232,10 +256,13 @@
                                 (gen/time-limit (:time-limit opts))
                                 (gen/nemesis
                                   (gen/seq  (cycle [
+                                                    {:type :info :f :kill-erlang-process-start}
                                                    (gen/sleep (:working-network-duration opts))
+                                                    {:type :info :f :kill-erlang-process-stop}
                                                    {:type :info, :f :split-start}
                                                    (gen/sleep (:partition-duration opts))
                                                    {:type :info, :f :split-stop}
+
                                                    ])
                                             )
                                   )
