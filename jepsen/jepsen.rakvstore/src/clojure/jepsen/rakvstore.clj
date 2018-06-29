@@ -136,43 +136,6 @@
                         (->> (gen/mix [r w cas])
                              (gen/limit (:ops-per-key opts)))))})
 
-(def workloads
-  "A map of workload names to functions that construct workloads, given opts."
-  {"set"      set/workload
-   "register" register-workload})
-
-(def cli-opts
-  "Additional command line options."
-  [["-r" "--rate HZ" "Approximate number of requests per second, per thread."
-    :default  10
-    :parse-fn read-string
-    :validate [#(and (number? %) (pos? %)) "Must be a positive number"]]
-   [nil "--ops-per-key NUM" "Maximum number of operations on any given key."
-    :default  100
-    :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]
-   ["-w" "--workload NAME" "What workload should we run?"
-    :missing  (str "--workload " (cli/one-of workloads))
-    :validate [workloads (cli/one-of workloads)]]
-   [nil "--erlang-net-ticktime NUM" "Erlang net tick time in seconds (https://www.rabbitmq.com/nettick.html)."
-    :default  -1
-    :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]
-   [nil "--disruption-duration NUM" "Duration of disruption (in seconds)"
-    :default  5
-    :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]
-   [nil "--time-before-disruption NUM" "Time before the nemesis kicks in (in seconds)"
-    :default  5
-    :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]
-   [nil "--release-cursor-every NUM" "Release RA cursor every n operations."
-    :default  -1
-    :parse-fn parse-long
-    :validate [pos? "Must be a positive integer."]]
-   ])
-
-
 (defn start-erlang-vm!
       "Start RA KV Store on node."
       [test node]
@@ -207,12 +170,12 @@
             erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
             erlangEval (str "eval 'exit(whereis(" erlangProcess "), killed_by_jepsen).'")
             ]
-         (c/su
-           (info node "Killing" erlangProcess "Erlang process")
-           (c/exec* binary erlangEval)
-           )
+           (c/su
+             (info node "Killing" erlangProcess "Erlang process")
+             (c/exec* binary erlangEval)
+             )
 
-        (info node erlangProcess "Erlang process killed" erlangEval))
+           (info node erlangProcess "Erlang process killed" erlangEval))
       :killed)
 
 (def kill-erlang-vm-nemesis
@@ -231,6 +194,53 @@
     start-erlang-process!)
   )
 
+
+(def nemesises
+  "A map of nemesis names to functions that construct nemesises, given opts."
+  {"kill-erlang-vm"          kill-erlang-vm-nemesis
+   "kill-erlang-process"     kill-erlang-process-nemesis
+   "random-partition-halves" (nemesis/partition-random-halves)})
+
+(def workloads
+  "A map of workload names to functions that construct workloads, given opts."
+  {"set"      set/workload
+   "register" register-workload})
+
+(def cli-opts
+  "Additional command line options."
+  [["-r" "--rate HZ" "Approximate number of requests per second, per thread."
+    :default  10
+    :parse-fn read-string
+    :validate [#(and (number? %) (pos? %)) "Must be a positive number"]]
+   [nil "--ops-per-key NUM" "Maximum number of operations on any given key."
+    :default  100
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   ["-w" "--workload NAME" "What workload should we run?"
+    :missing  (str "--workload " (cli/one-of workloads))
+    :validate [workloads (cli/one-of workloads)]]
+   [nil "--nemesis NAME" "What nemesis should we use?"
+    :missing  (str "--nemesis " (cli/one-of nemesises))
+    :validate [nemesises (cli/one-of nemesises)]]
+   [nil "--erlang-net-ticktime NUM" "Erlang net tick time in seconds (https://www.rabbitmq.com/nettick.html)."
+    :default  -1
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   [nil "--disruption-duration NUM" "Duration of disruption (in seconds)"
+    :default  5
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   [nil "--time-before-disruption NUM" "Time before the nemesis kicks in (in seconds)"
+    :default  5
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   [nil "--release-cursor-every NUM" "Release RA cursor every n operations."
+    :default  -1
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
+   ])
+
+
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
       :concurrency ...), constructs a test map. Special options:
@@ -238,10 +248,14 @@
         :rate                 Approximate number of requests per second, per thread.
         :ops-per-key          Maximum number of operations allowed on any given key.
         :workload             Type of workload.
+        :nemesis              Type of nemesis.
         :erlang-net-ticktime  Erlang net tick time.
         :release-cursor-every Release RA cursor every n operations."
       [opts]
-      (let [workload  ((get workloads (:workload opts)) opts)]
+      (let [
+            workload  ((get workloads (:workload opts)) opts)
+            nemesis   (get nemesises (:nemesis opts))
+            ]
       (merge tests/noop-test
              opts
              {:name (str (name (:workload opts)))
@@ -252,14 +266,7 @@
                             {:perf     (checker/perf)
                              :workload (:checker workload)})
               :client     (:client workload)
-              :nemesis (nemesis/compose {
-                                         {:split-start :start
-                                          :split-stop  :stop} (nemesis/partition-random-halves)
-                                         {:kill-erlang-vm-start  :start
-                                          :kill-erlang-vm-stop   :stop} kill-erlang-vm-nemesis
-                                         {:kill-erlang-process-start  :start
-                                          :kill-erlang-process-stop :stop} kill-erlang-process-nemesis
-                                         })
+              :nemesis nemesis
               :generator (gen/phases
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
@@ -267,16 +274,16 @@
                                 (gen/nemesis
                                   (gen/seq  (cycle [
                                                     (gen/sleep (:time-before-disruption opts))
-                                                    {:type :info :f :split-start}
+                                                    {:type :info :f :start}
                                                     (gen/sleep (:disruption-duration opts))
-                                                    {:type :info :f :split-stop}
+                                                    {:type :info :f :stop}
                                                    ])
                                             )
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :stop}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}

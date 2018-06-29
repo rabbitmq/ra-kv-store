@@ -39,7 +39,7 @@ Inside the control container, `cd` into the RA KV Store test directory and launc
 
 ```
 $ cd jepsen.rakvstore
-$ lein run test --time-limit 15 --concurrency 10 --rate 1 --workload set
+$ lein run test --time-limit 15 --concurrency 10 --rate 1 --workload set --nemesis random-partition-halves
 ```
 
 The execution should finish with something like the following:
@@ -71,6 +71,7 @@ Most common options to use:
  * `--concurrency`: number of workers to run
  * `--rate`: number of requests per thread
  * `--workload`: the type of test, can be `register` or `set`
+ * `--nemesis`: the type of nemesis, can be `random-partition-halves`, `kill-erlang-vm` or `kill-erlang-process`
  * `--erlang-net-ticktime`: Erlang net tick time (in seconds)
  * `--time-before-disruption`: time before the nemesis kicks in (in seconds)
  * `--disruption-duration`: duration of disruption (in seconds)
