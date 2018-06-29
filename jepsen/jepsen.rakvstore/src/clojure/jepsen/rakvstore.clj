@@ -160,11 +160,11 @@
     :default  -1
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
-   [nil "--partition-duration NUM" "Partition duration in seconds."
+   [nil "--disruption-duration NUM" "Duration of disruption (in seconds)"
     :default  5
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
-   [nil "--working-network-duration NUM" "Working (no partition) network duration in seconds."
+   [nil "--time-before-disruption NUM" "Time before the nemesis kicks in (in seconds)"
     :default  5
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
@@ -175,7 +175,7 @@
    ])
 
 
-(defn start!
+(defn start-erlang-vm!
       "Start RA KV Store on node."
       [test node]
       (c/su
@@ -188,10 +188,10 @@
               (info node "RA KV Store started"))))
       :started)
 
-(defn kill!
+(defn kill-erlang-vm!
       "Kills RA KV store on node."
       [test node]
-      (util/meh (c/su (c/exec :killall :-9 :erts)))
+      (util/meh (c/su (c/exec* "killall -9 beam.smp")))
       (info node "RA KV Store killed.")
       :killed)
 
@@ -217,6 +217,13 @@
         (info node erlangProcess "Erlang process killed" erlangEval))
       :killed)
 
+(def kill-erlang-vm-nemesis
+  "A nemesis that kills the Erlang VM on a random node"
+  (nemesis/node-start-stopper
+    rand-nth
+    kill-erlang-vm!
+    start-erlang-vm!))
+
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
       :concurrency ...), constructs a test map. Special options:
@@ -227,11 +234,7 @@
         :erlang-net-ticktime  Erlang net tick time.
         :release-cursor-every Release RA cursor every n operations."
       [opts]
-      (let [
-            workload  ((get workloads (:workload opts)) opts)
-            randomNode (rand-nth (:nodes opts))
-
-      ]
+      (let [workload  ((get workloads (:workload opts)) opts)]
       (merge tests/noop-test
              opts
              {:name (str (name (:workload opts)))
@@ -246,9 +249,9 @@
                                          {:split-start :start
                                           :split-stop  :stop} (nemesis/partition-random-halves)
                                          {:kill-start  :start
-                                          :kill-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start! kill!)
-                                         {:kill-erlang-process-start  :start
-                                          :kill-erlang-process-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start-kill-erlang-process! kill-erlang-process!)
+                                          :kill-stop   :stop} kill-erlang-vm-nemesis
+                                         ;{:kill-erlang-process-start  :start
+                                         ; :kill-erlang-process-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start-kill-erlang-process! kill-erlang-process!)
                                          })
               :generator (gen/phases
                            (->> (:generator workload)
@@ -256,21 +259,17 @@
                                 (gen/time-limit (:time-limit opts))
                                 (gen/nemesis
                                   (gen/seq  (cycle [
-                                                    {:type :info :f :kill-erlang-process-start}
-                                                   (gen/sleep (:working-network-duration opts))
-                                                    {:type :info :f :kill-erlang-process-stop}
-                                                   {:type :info, :f :split-start}
-                                                   (gen/sleep (:partition-duration opts))
-                                                   {:type :info, :f :split-stop}
-
+                                                    (gen/sleep (:time-before-disruption opts))
+                                                    {:type :info :f :kill-start}
+                                                    (gen/sleep (:disruption-duration opts))
+                                                    {:type :info :f :kill-stop}
                                                    ])
                                             )
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
-                           (gen/nemesis (gen/once {:type :info, :f :kill-start}))
+                           (gen/nemesis (gen/once {:type :info, :f :kill-stop}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}

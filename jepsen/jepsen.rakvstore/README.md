@@ -72,8 +72,8 @@ Most common options to use:
  * `--rate`: number of requests per thread
  * `--workload`: the type of test, can be `register` or `set`
  * `--erlang-net-ticktime`: Erlang net tick time (in seconds)
- * `--partition-duration`: duration of a partition (in seconds)
- * `--working-network-duration`: working (no partition) network duration (in seconds)
+ * `--time-before-disruption`: time before the nemesis kicks in (in seconds)
+ * `--disruption-duration`: duration of disruption (in seconds)
 
 The `register` workload tests the RA KV Store cluster as a set of registers, identified
 by a key. The supported operations are read, write, and compare-and-set. The `set` workload
