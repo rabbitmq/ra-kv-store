@@ -77,12 +77,10 @@
 (def releasefile "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz")
 ;(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
 (def dir "/opt/rakvstore")
-(def logDir "/opt/rakvstore/log")
+(def log-dir "/opt/rakvstore/log")
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
 (def binary "/opt/rakvstore/bin/ra_kv_store_release")
-(def logfile "/opt/rakvstore/log/erlang.log.1")
-(def erllogfile "/opt/rakvstore/log/run_erl.log")
 
 (defn db
       "RA KV Store."
@@ -100,7 +98,7 @@
                        (let [vmArgs (com.rabbitmq.jepsen.Utils/vmArgs)]
                             (c/exec :echo vmArgs :| :tee vmArgsFile)
                             )
-                       (c/exec :mkdir logDir)
+                       (c/exec :mkdir log-dir)
                        (c/exec binary "start")
                        (Thread/sleep 2000)
                        )
@@ -110,7 +108,7 @@
                         (c/su
                           (if (not= "" (try
                                          (c/exec :pgrep :beam)
-                                         (catch RuntimeException e "")))
+                                         (catch RuntimeException _ "")))
                             (c/exec binary "stop")
                             (do (info node "RA KV Store already stopped")
                                 ))
@@ -119,8 +117,8 @@
                         )
              db/LogFiles
              (log-files [_ test node]
-                        [logfile erllogfile])
-             ))
+                        (jepsen.control.util/ls-full log-dir)
+                        )))
 
 (defn register-workload
       "Tests linearizable reads, writes, and compare-and-set operations on
@@ -269,16 +267,16 @@
                                 (gen/nemesis
                                   (gen/seq  (cycle [
                                                     (gen/sleep (:time-before-disruption opts))
-                                                    {:type :info :f :kill-erlang-process-start}
+                                                    {:type :info :f :split-start}
                                                     (gen/sleep (:disruption-duration opts))
-                                                    {:type :info :f :kill-erlang-process-stop}
+                                                    {:type :info :f :split-stop}
                                                    ])
                                             )
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}
