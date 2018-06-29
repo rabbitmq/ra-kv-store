@@ -195,7 +195,7 @@
       (info node "RA KV Store killed.")
       :killed)
 
-(defn start-kill-erlang-process!
+(defn start-erlang-process!
       "Start for Erlang process killer (no-op)."
       [test node]
       (info node "Called start of Erlang process killer (no-op)")
@@ -222,7 +222,16 @@
   (nemesis/node-start-stopper
     rand-nth
     kill-erlang-vm!
-    start-erlang-vm!))
+    start-erlang-vm!)
+  )
+
+(def kill-erlang-process-nemesis
+  "A nemesis that kills a random RA log process on a random node"
+  (nemesis/node-start-stopper
+    rand-nth
+    kill-erlang-process!
+    start-erlang-process!)
+  )
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
@@ -248,10 +257,10 @@
               :nemesis (nemesis/compose {
                                          {:split-start :start
                                           :split-stop  :stop} (nemesis/partition-random-halves)
-                                         {:kill-start  :start
-                                          :kill-stop   :stop} kill-erlang-vm-nemesis
-                                         ;{:kill-erlang-process-start  :start
-                                         ; :kill-erlang-process-stop   :stop} (nemesis/node-start-stopper (fn [_] randomNode) start-kill-erlang-process! kill-erlang-process!)
+                                         {:kill-erlang-vm-start  :start
+                                          :kill-erlang-vm-stop   :stop} kill-erlang-vm-nemesis
+                                         {:kill-erlang-process-start  :start
+                                          :kill-erlang-process-stop :stop} kill-erlang-process-nemesis
                                          })
               :generator (gen/phases
                            (->> (:generator workload)
@@ -260,16 +269,16 @@
                                 (gen/nemesis
                                   (gen/seq  (cycle [
                                                     (gen/sleep (:time-before-disruption opts))
-                                                    {:type :info :f :kill-start}
+                                                    {:type :info :f :kill-erlang-process-start}
                                                     (gen/sleep (:disruption-duration opts))
-                                                    {:type :info :f :kill-stop}
+                                                    {:type :info :f :kill-erlang-process-stop}
                                                    ])
                                             )
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :kill-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}
