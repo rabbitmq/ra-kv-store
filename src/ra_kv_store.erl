@@ -32,11 +32,12 @@ cas(ServerReference, Key, ExpectedValue, NewValue) ->
 
 init(_Config) -> {#{}, []}.
 
-apply(Index, {write, Key, Value}, _, State) ->
+apply(#{index := Index} = _Metadata, {write, Key, Value}, _, State) ->
+    io:format("Index ~p~n", [Index]),
     NewState = maps:put(Key, Value, State),
     SideEffects = side_effects(Index, NewState),
     {NewState, SideEffects};
-apply(Index, {cas, Key, ExpectedValue, NewValue}, _, State) ->
+apply(#{index := Index} = _Metadata, {cas, Key, ExpectedValue, NewValue}, _, State) ->
     {NewState, ReadValue} = case maps:get(Key, State, undefined) of
         ExpectedValue ->
             {maps:put(Key, NewValue, State), ExpectedValue};
