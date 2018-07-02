@@ -16,7 +16,7 @@
 -module(ra_kv_store_app).
 -behaviour(application).
 
--export([start/2]).
+-export([start/2, connect_nodes/1, connect_node/1]).
 -export([stop/1]).
 
 start(_Type, _Args) ->
@@ -27,6 +27,12 @@ start(_Type, _Args) ->
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
     start_or_restart_cluster(ClusterId, Machine, Nodes),
+
+    % to make sure nodes are always connected
+    {ok, ReconnectInterval} = application:get_env(ra_kv_store, node_reconnection_interval),
+    {ok, _ } = timer:apply_interval(
+        ReconnectInterval,
+        ?MODULE, connect_nodes, [Nodes]),
 
     Dispatch = cowboy_router:compile([
         {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ServerReference}]}]}
@@ -53,3 +59,10 @@ start_or_restart_cluster(ClusterId, Machine,
         {error, _} ->
             ra:start_cluster(ClusterId, Machine, NodeIds)
     end.
+
+connect_nodes(Nodes) ->
+    error_logger:info_msg("Reconnecting nodes ~p~n", [Nodes]),
+    lists:foreach(fun ra_kv_store_app:connect_node/1, Nodes).
+
+connect_node({_, Node}) ->
+    net_kernel:connect_node(Node).
