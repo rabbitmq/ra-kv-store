@@ -16,11 +16,9 @@
 
 package com.rabbitmq.jepsen;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -65,7 +63,10 @@ public class UtilsTest {
         String configuration = Utils.configuration(test, "192.168.33.10");
 
         assertEquals("[\n"
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 134217728}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}]},\n"
@@ -79,7 +80,10 @@ public class UtilsTest {
         configuration = Utils.configuration(test, "192.168.33.10");
 
         assertEquals("[\n"
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 134217728}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}, {ra_kv1, 'kv@192.168.33.11'}, {ra_kv2, 'kv@192.168.33.12'}]},\n"
@@ -94,7 +98,10 @@ public class UtilsTest {
         configuration = Utils.configuration(test, "n2");
 
         assertEquals("[\n"
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 134217728}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
@@ -108,7 +115,10 @@ public class UtilsTest {
         test.put(":erlang-net-ticktime", "-1");
         configuration = Utils.configuration(test, "n2");
         assertEquals("[\n"
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 134217728}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
@@ -123,7 +133,28 @@ public class UtilsTest {
         configuration = Utils.configuration(test, "n2");
         assertEquals("[\n"
             + "{kernel, [{net_ticktime,  15}]},\n"
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 134217728}\n"
+            + "    ]},\n"
+            + "    {ra_kv_store, [\n"
+            + "        {port, 8080},\n"
+            + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
+            + "        {server_reference, ra_kv2},\n"
+            + "        {release_cursor_every, -1}\n"
+            + "    ]}\n"
+            + "].", configuration);
+
+        test = new HashMap<>();
+        test.put(":nodes", asList("n1", "n2", "n3"));
+        test.put(":erlang-net-ticktime", "-1");
+        test.put(":wal-max-size-bytes", "8388608"); // 8 MB
+        configuration = Utils.configuration(test, "n2");
+        assertEquals("[\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, 8388608}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [{ra_kv1, 'kv@n1'}, {ra_kv2, 'kv@n2'}, {ra_kv3, 'kv@n3'}]},\n"
@@ -133,7 +164,8 @@ public class UtilsTest {
             + "].", configuration);
     }
 
-    @Test public void configurationNetTickTime() {
+    @Test
+    public void configurationNetTickTime() {
         assertEquals("", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "-1")));
         assertEquals("{kernel, [{net_ticktime,  0}]},\n", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "0")));
         assertEquals("{kernel, [{net_ticktime,  120}]},\n", erlangNetTickTime(singletonMap(":erlang-net-ticktime", "120")));

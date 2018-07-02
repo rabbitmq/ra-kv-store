@@ -49,6 +49,9 @@ public class Utils {
         String erlangNetTickTime = get(test, ":erlang-net-ticktime") != null ? erlangNetTickTime(test) : "";
         Object releaseCursorEvery = get(test, ":release-cursor-every");
         releaseCursorEvery = releaseCursorEvery == null ? -1L : Long.parseLong(releaseCursorEvery.toString());
+        Object walMaxSizeBytes = get(test, ":wal-max-size-bytes");
+        Long megaBytes128 = 134217728L;
+        walMaxSizeBytes = walMaxSizeBytes == null ? megaBytes128 : Long.parseLong(walMaxSizeBytes.toString());
 
         List<String> nodes = nodesObj.stream().map(o -> {
             String node = o.toString();
@@ -59,17 +62,19 @@ public class Utils {
         String node = currentNode.toString();
         String nodeIndex = node.substring(node.length() - 1, node.length());
 
-
         String configuration = String.format("[\n"
             + erlangNetTickTime
-            + "    {ra, [{data_dir, \"/tmp/ra_kv_store\"}]},\n"
+            + "    {ra, [\n"
+            + "        {data_dir, \"/tmp/ra_kv_store\"},\n"
+            + "        {wal_max_size_bytes, %d}\n"
+            + "    ]},\n"
             + "    {ra_kv_store, [\n"
             + "        {port, 8080},\n"
             + "        {nodes, [%s]},\n"
             + "        {server_reference, ra_kv%s},\n"
             + "        {release_cursor_every, %d}\n"
             + "    ]}\n"
-            + "].", String.join(", ", nodes), nodeIndex, releaseCursorEvery);
+            + "].", walMaxSizeBytes, String.join(", ", nodes), nodeIndex, releaseCursorEvery);
 
         return configuration;
     }

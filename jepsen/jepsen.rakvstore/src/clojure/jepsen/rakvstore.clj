@@ -197,9 +197,13 @@
 
 (def nemesises
   "A map of nemesis names to functions that construct nemesises, given opts."
-  {"kill-erlang-vm"          kill-erlang-vm-nemesis
-   "kill-erlang-process"     kill-erlang-process-nemesis
-   "random-partition-halves" (nemesis/partition-random-halves)})
+  {"kill-erlang-vm"            kill-erlang-vm-nemesis
+   "kill-erlang-process"       kill-erlang-process-nemesis
+   "random-partition-halves"   (nemesis/partition-random-halves)
+   "partition-halves"          (nemesis/partition-halves)
+   "partition-majorities-ring" (nemesis/partition-majorities-ring)
+   "partition-random-node"     (nemesis/partition-random-node)
+   })
 
 (def workloads
   "A map of workload names to functions that construct workloads, given opts."
@@ -238,8 +242,13 @@
     :default  -1
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
+   [nil "--wal-max-size-bytes NUM" "Maximum size of RA Write Ahead Log, default is 134217728 (128 MB)."
+    :default  134217728
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
    ])
 
+; :
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
