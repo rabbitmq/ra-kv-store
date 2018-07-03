@@ -162,12 +162,33 @@
       (info node "Called start of Erlang process killer (no-op)")
       :started)
 
+(defn one-random
+      "Select one random element"
+      [coll]
+      (rand-nth coll))
+
+(defn two-random
+      "Select 2 random elements"
+      [coll]
+      ((comp (partial take 2) shuffle) coll))
+
+(defn three-random
+      "Select 3 random elements"
+      [coll]
+      ((comp (partial take 3) shuffle) coll))
+
+(defn all
+      "Select all elements"
+      [coll]
+      (identity))
+
 (defn kill-erlang-process!
       "Kills a random RA Erlang process"
       [test node]
       (let [
             ; FIXME looks loke the ra_log_segment_writer isn't killed (doesn't show up in the logs)
-            erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
+            ;erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
+            erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer"))
             erlangEval (str "eval 'exit(whereis(" erlangProcess "), killed_by_jepsen).'")
             ]
            (c/su
@@ -179,17 +200,17 @@
       :killed)
 
 (def kill-erlang-vm-nemesis
-  "A nemesis that kills the Erlang VM on a random node"
+  "A nemesis that kills the Erlang VM on (a) random node(s)"
   (nemesis/node-start-stopper
-    rand-nth
+    two-random
     kill-erlang-vm!
     start-erlang-vm!)
   )
 
 (def kill-erlang-process-nemesis
-  "A nemesis that kills a random RA log process on a random node"
+  "A nemesis that kills a random RA log process on (a) random node(s)"
   (nemesis/node-start-stopper
-    rand-nth
+    shuffle
     kill-erlang-process!
     start-erlang-process!)
   )
@@ -247,8 +268,6 @@
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
    ])
-
-; :
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
