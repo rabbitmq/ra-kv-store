@@ -62,10 +62,14 @@
                                                              :ok
                                                              :fail)))
                                  )
-                           (catch java.io.IOException _
+                           (catch com.rabbitmq.jepsen.RaTimeoutException _
+                             (assoc op
+                                    :type  :info
+                                    :error :timeout))
+                           (catch java.lang.Exception _
                              (assoc op
                                     :type  (if (= :read (:f op)) :fail :info)
-                                    :error :ioexception))
+                                    :error :exception))
                            ))
 
                     )

@@ -50,14 +50,19 @@ init(Req0=#{method := <<"PUT">>}, State) ->
 
     Req = case Expected of
         not_present ->
-            ok = ra_kv_store:write(ServerReference, Key, Value),
-            cowboy_req:reply(204, #{}, Req1);
+            case ra_kv_store:write(ServerReference, Key, Value) of
+                ok ->
+                    cowboy_req:reply(204, #{}, Req1);
+                timeout ->
+                    cowboy_req:reply(503, #{}, "RA timeout", Req1)
+            end;
         Expected ->
-            ReadValue = ra_kv_store:cas(ServerReference, Key, Expected, Value),
-            case ReadValue of
+            case ra_kv_store:cas(ServerReference, Key, Expected, Value) of
                 Expected ->
                     cowboy_req:reply(204, #{}, Req1);
-                _ ->
+                timeout ->
+                    cowboy_req:reply(503, #{}, "RA timeout", Req1);
+                ReadValue ->
                     cowboy_req:reply(409, #{}, ReadValue, Req1)
             end
     end,

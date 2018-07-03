@@ -19,21 +19,24 @@
 -export([init/1, apply/4, write/3, read/2, cas/4]).
 
 write(ServerReference, Key, Value) ->
-    {ok, _, _} = ra:send_and_await_consensus(ServerReference, {write, Key, Value}),
-    ok.
+    case ra:send_and_await_consensus(ServerReference, {write, Key, Value}) of
+        {ok, _, _} -> ok;
+        {timeout, _} -> timeout
+    end.
 
 read(ServerReference, Key) ->
     {ok, {_, Value}, _} = ra:consistent_query(ServerReference, fun(State) -> maps:get(Key, State, undefined) end),
     Value.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
-    {ok, ReadValue, _} = ra:send_and_await_consensus(ServerReference, {cas, Key, ExpectedValue, NewValue}),
-    ReadValue.
+    case ra:send_and_await_consensus(ServerReference, {cas, Key, ExpectedValue, NewValue}) of
+        {ok, ReadValue, _} -> ReadValue;
+        {timeout, _} -> timeout
+    end.
 
 init(_Config) -> {#{}, []}.
 
 apply(#{index := Index} = _Metadata, {write, Key, Value}, _, State) ->
-    io:format("Index ~p~n", [Index]),
     NewState = maps:put(Key, Value, State),
     SideEffects = side_effects(Index, NewState),
     {NewState, SideEffects};

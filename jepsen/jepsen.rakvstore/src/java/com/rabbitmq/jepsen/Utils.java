@@ -30,6 +30,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -227,6 +228,14 @@ public class Utils {
                     out.write("value=" + value.toString());
                 }
                 conn.getInputStream();
+            } catch (Exception e) {
+                int responseCode = conn.getResponseCode();
+                String responseBody = response(conn.getErrorStream());
+                if (responseCode == 503 && "RA timeout".equals(responseBody)) {
+                    throw new RaTimeoutException();
+                } else {
+                    throw e;
+                }
             } finally {
                 if (conn != null) {
                     conn.disconnect();
@@ -249,8 +258,16 @@ public class Utils {
                 LOG.statusCode(request, conn.getResponseCode());
                 return true;
             } catch (Exception e) {
-                LOG.statusCode(request, conn.getResponseCode());
-                return false;
+                int responseCode = conn.getResponseCode();
+                String responseBody = response(conn.getErrorStream());
+                LOG.statusCode(request, responseCode);
+                if (responseCode == 409) {
+                    return false;
+                } else if (responseCode == 503 && "RA timeout".equals(responseBody)) {
+                    throw new RaTimeoutException();
+                } else {
+                    throw e;
+                }
             } finally {
                 if (conn != null) {
                     conn.disconnect();
@@ -271,6 +288,7 @@ public class Utils {
          */
         public void addToSet(Object key, Object value) throws Exception {
             RequestAttempt requestAttempt = LOG.requestAttempt(node, value);
+            final AtomicBoolean result = new AtomicBoolean();
             retry(() -> {
                 LOG.step(requestAttempt, () -> "in retry loop");
                 // currentValue is ""
@@ -279,13 +297,17 @@ public class Utils {
                     LOG.step(requestAttempt, () -> "no value in the set");
                     LOG.attempt(requestAttempt);
                     LOG.step(requestAttempt, () -> "sending cas operation for empty set");
-                    boolean result = cas(key.toString(), "", value.toString());
+                    try {
+                        result.set(cas(key.toString(), "", value.toString()));
+                    } catch (RaTimeoutException e) {
+                        result.set(true);
+                    }
                     LOG.step(requestAttempt, () -> "cas operation returned " + result + " for empty set");
-                    if (result) {
+                    if (result.get()) {
                         LOG.success(requestAttempt);
                     }
-                    LOG.step(requestAttempt, () -> "returning " + result);
-                    return result;
+                    LOG.step(requestAttempt, () -> "returning " + result.get());
+                    return result.get();
                 }
                 // currentValue is "1 2 3 4 5"
                 String valueAsString = value.toString();
@@ -301,13 +323,17 @@ public class Utils {
                 LOG.attempt(requestAttempt);
                 LOG.step(requestAttempt, () -> "value not already in the set");
                 LOG.step(requestAttempt, () -> "sending cas option");
-                boolean result = cas(key, currentValue, currentValue + " " + valueAsString);
-                LOG.step(requestAttempt, () -> "cas operation returned " + result);
-                if (result) {
+                try {
+                    result.set(cas(key, currentValue, currentValue + " " + valueAsString));
+                } catch (RaTimeoutException e) {
+                    result.set(true);
+                }
+                LOG.step(requestAttempt, () -> "cas operation returned " + result.get());
+                if (result.get()) {
                     LOG.success(requestAttempt);
                 }
-                LOG.step(requestAttempt, () -> "returning " + result);
-                return result;
+                LOG.step(requestAttempt, () -> "returning " + result.get());
+                return result.get();
             });
         }
 
