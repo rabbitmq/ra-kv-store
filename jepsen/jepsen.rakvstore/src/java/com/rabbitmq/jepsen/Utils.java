@@ -318,7 +318,8 @@ public class Utils {
                         try {
                             result.set(cas(key.toString(), "", value.toString()));
                         } catch (RaTimeoutException e) {
-                            result.set(true);
+                            LOG.step(requestAttempt, () -> "cas operation timed out, result isn't indeterminate");
+                            throw e;
                         }
                         LOG.step(requestAttempt, () -> "cas operation returned " + result + " for empty set");
                         if (result.get()) {
@@ -344,7 +345,8 @@ public class Utils {
                     try {
                         result.set(cas(key, currentValue, currentValue + " " + valueAsString));
                     } catch (RaTimeoutException e) {
-                        result.set(true);
+                        LOG.step(requestAttempt, () -> "cas operation timed out, result isn't indeterminate");
+                        throw e;
                     }
                     LOG.step(requestAttempt, () -> "cas operation returned " + result.get());
                     if (result.get()) {
