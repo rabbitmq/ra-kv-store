@@ -196,6 +196,7 @@ public class UtilsTest {
 
     @Test
     public void casWithNull() throws Exception {
+        assertFalse(client.cas(KEY, "2", "1"));
         assertTrue(client.cas(KEY, "", "1"));
         assertEquals("1", client.get(KEY));
         assertFalse(client.cas(KEY, "", "2"));

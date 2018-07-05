@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -199,80 +200,95 @@ public class Utils {
             this.node = node;
         }
 
-        String get(Object key) throws Exception {
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
-            HttpURLConnection conn = null;
+        <V> V request(Callable<V> call) throws Exception {
             try {
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                try {
-                    return response(conn.getInputStream());
-                } catch (FileNotFoundException e) {
-                    return null;
-                }
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
-                }
+                return call.call();
+            } catch (ConnectException e) {
+                throw new RaNodeDownException();
             }
+        }
+
+        String get(Object key) throws Exception {
+            return request(() -> {
+                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                HttpURLConnection conn = null;
+                try {
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    try {
+                        return response(conn.getInputStream());
+                    } catch (FileNotFoundException e) {
+                        return null;
+                    }
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
+                }
+            });
         }
 
         void write(Object key, Object value) throws Exception {
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
-            HttpURLConnection conn = null;
-            try {
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("PUT");
-                conn.setDoOutput(true);
-                try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
-                    out.write("value=" + value.toString());
+            request(() -> {
+                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                HttpURLConnection conn = null;
+                try {
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("PUT");
+                    conn.setDoOutput(true);
+                    try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
+                        out.write("value=" + value.toString());
+                    }
+                    conn.getInputStream();
+                } catch (Exception e) {
+                    int responseCode = conn.getResponseCode();
+                    String responseBody = response(conn.getErrorStream());
+                    if (responseCode == 503 && "RA timeout".equals(responseBody)) {
+                        throw new RaTimeoutException();
+                    } else {
+                        throw e;
+                    }
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
                 }
-                conn.getInputStream();
-            } catch (Exception e) {
-                int responseCode = conn.getResponseCode();
-                String responseBody = response(conn.getErrorStream());
-                if (responseCode == 503 && "RA timeout".equals(responseBody)) {
-                    throw new RaTimeoutException();
-                } else {
-                    throw e;
-                }
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
-                }
-            }
+                return null;
+            });
         }
 
         boolean cas(Object key, Object oldValue, Object newValue) throws Exception {
-            CasRequest request = LOG.casRequest(node, oldValue, newValue);
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
-            HttpURLConnection conn = null;
-            try {
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("PUT");
-                conn.setDoOutput(true);
-                try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
-                    out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
+            return request(() -> {
+                CasRequest request = LOG.casRequest(node, oldValue, newValue);
+                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                HttpURLConnection conn = null;
+                try {
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("PUT");
+                    conn.setDoOutput(true);
+                    try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
+                        out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
+                    }
+                    conn.getInputStream();
+                    LOG.statusCode(request, conn.getResponseCode());
+                    return true;
+                } catch (Exception e) {
+                    int responseCode = conn.getResponseCode();
+                    String responseBody = response(conn.getErrorStream());
+                    LOG.statusCode(request, responseCode);
+                    if (responseCode == 409) {
+                        return false;
+                    } else if (responseCode == 503 && "RA timeout".equals(responseBody)) {
+                        throw new RaTimeoutException();
+                    } else {
+                        throw e;
+                    }
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
                 }
-                conn.getInputStream();
-                LOG.statusCode(request, conn.getResponseCode());
-                return true;
-            } catch (Exception e) {
-                int responseCode = conn.getResponseCode();
-                String responseBody = response(conn.getErrorStream());
-                LOG.statusCode(request, responseCode);
-                if (responseCode == 409) {
-                    return false;
-                } else if (responseCode == 503 && "RA timeout".equals(responseBody)) {
-                    throw new RaTimeoutException();
-                } else {
-                    throw e;
-                }
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
-                }
-            }
+            });
         }
 
         /**
@@ -287,53 +303,57 @@ public class Utils {
          * @throws Exception
          */
         public void addToSet(Object key, Object value) throws Exception {
-            RequestAttempt requestAttempt = LOG.requestAttempt(node, value);
-            final AtomicBoolean result = new AtomicBoolean();
-            retry(() -> {
-                LOG.step(requestAttempt, () -> "in retry loop");
-                // currentValue is ""
-                String currentValue = get(key);
-                if (currentValue == null || currentValue.isEmpty()) {
-                    LOG.step(requestAttempt, () -> "no value in the set");
+            request(() -> {
+
+                RequestAttempt requestAttempt = LOG.requestAttempt(node, value);
+                final AtomicBoolean result = new AtomicBoolean();
+                retry(() -> {
+                    LOG.step(requestAttempt, () -> "in retry loop");
+                    // currentValue is ""
+                    String currentValue = get(key);
+                    if (currentValue == null || currentValue.isEmpty()) {
+                        LOG.step(requestAttempt, () -> "no value in the set");
+                        LOG.attempt(requestAttempt);
+                        LOG.step(requestAttempt, () -> "sending cas operation for empty set");
+                        try {
+                            result.set(cas(key.toString(), "", value.toString()));
+                        } catch (RaTimeoutException e) {
+                            result.set(true);
+                        }
+                        LOG.step(requestAttempt, () -> "cas operation returned " + result + " for empty set");
+                        if (result.get()) {
+                            LOG.success(requestAttempt);
+                        }
+                        LOG.step(requestAttempt, () -> "returning " + result.get());
+                        return result.get();
+                    }
+                    // currentValue is "1 2 3 4 5"
+                    String valueAsString = value.toString();
+                    LOG.step(requestAttempt, () -> "checking value to add is not already in the set");
+                    for (String valueInSet : currentValue.split(" ")) {
+                        if (valueAsString.equals(valueInSet)) {
+                            LOG.alreadyInSet(requestAttempt);
+                            LOG.step(requestAttempt, () -> "value already in the set, returning true");
+                            // already in the set, nothing to do
+                            return true;
+                        }
+                    }
                     LOG.attempt(requestAttempt);
-                    LOG.step(requestAttempt, () -> "sending cas operation for empty set");
+                    LOG.step(requestAttempt, () -> "value not already in the set");
+                    LOG.step(requestAttempt, () -> "sending cas option");
                     try {
-                        result.set(cas(key.toString(), "", value.toString()));
+                        result.set(cas(key, currentValue, currentValue + " " + valueAsString));
                     } catch (RaTimeoutException e) {
                         result.set(true);
                     }
-                    LOG.step(requestAttempt, () -> "cas operation returned " + result + " for empty set");
+                    LOG.step(requestAttempt, () -> "cas operation returned " + result.get());
                     if (result.get()) {
                         LOG.success(requestAttempt);
                     }
                     LOG.step(requestAttempt, () -> "returning " + result.get());
                     return result.get();
-                }
-                // currentValue is "1 2 3 4 5"
-                String valueAsString = value.toString();
-                LOG.step(requestAttempt, () -> "checking value to add is not already in the set");
-                for (String valueInSet : currentValue.split(" ")) {
-                    if (valueAsString.equals(valueInSet)) {
-                        LOG.alreadyInSet(requestAttempt);
-                        LOG.step(requestAttempt, () -> "value already in the set, returning true");
-                        // already in the set, nothing to do
-                        return true;
-                    }
-                }
-                LOG.attempt(requestAttempt);
-                LOG.step(requestAttempt, () -> "value not already in the set");
-                LOG.step(requestAttempt, () -> "sending cas option");
-                try {
-                    result.set(cas(key, currentValue, currentValue + " " + valueAsString));
-                } catch (RaTimeoutException e) {
-                    result.set(true);
-                }
-                LOG.step(requestAttempt, () -> "cas operation returned " + result.get());
-                if (result.get()) {
-                    LOG.success(requestAttempt);
-                }
-                LOG.step(requestAttempt, () -> "returning " + result.get());
-                return result.get();
+                });
+                return null;
             });
         }
 

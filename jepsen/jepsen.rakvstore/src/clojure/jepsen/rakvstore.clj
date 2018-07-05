@@ -66,6 +66,10 @@
                              (assoc op
                                     :type  :info
                                     :error :timeout))
+                           (catch com.rabbitmq.jepsen.RaNodeDownException _
+                             (assoc op
+                                    :type  :info
+                                    :error :nodedown))
                            (catch java.lang.Exception _
                              (assoc op
                                     :type  (if (= :read (:f op)) :fail :info)
@@ -149,7 +153,7 @@
                        (catch RuntimeException _ "")))
           (info node "RA KV Store already running.")
           (do (info node "Starting RA KV Store...")
-              (c/exec binary "start")
+              (c/exec* binary "start -ra_kv_store restart_ra_cluster 'true'")
               (info node "RA KV Store started"))))
       :started)
 
@@ -214,7 +218,7 @@
 (def kill-erlang-process-nemesis
   "A nemesis that kills a random RA log process on (a) random node(s)"
   (nemesis/node-start-stopper
-    shuffle
+    one-random
     kill-erlang-process!
     start-erlang-process!)
   )

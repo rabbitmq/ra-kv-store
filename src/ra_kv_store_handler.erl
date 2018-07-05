@@ -63,7 +63,7 @@ init(Req0=#{method := <<"PUT">>}, State) ->
                 timeout ->
                     cowboy_req:reply(503, #{}, "RA timeout", Req1);
                 ReadValue ->
-                    cowboy_req:reply(409, #{}, ReadValue, Req1)
+                    cowboy_req:reply(409, #{}, to_list(ReadValue), Req1)
             end
     end,
 	{ok, Req, State};
@@ -72,4 +72,10 @@ init(Req0, State) ->
 		<<"allow">> => <<"GET,PUT">>
 	}, Req0),
 	{ok, Req, State}.
+
+-spec to_list(Val :: integer() | list() | binary() | atom()) -> list().
+to_list(Val) when is_list(Val)    -> Val;
+to_list(Val) when is_atom(Val)    -> atom_to_list(Val);
+to_list(Val) when is_binary(Val)  -> binary_to_list(Val);
+to_list(Val) when is_integer(Val) -> integer_to_list(Val).
 

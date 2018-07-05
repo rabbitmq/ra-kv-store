@@ -110,6 +110,9 @@ http_handler(_Config) ->
     {ok, {{_, 404, _}, _, _}} =
         httpc:request(get, {Url, []}, [], []),
 
+    {ok, {{_, 409, _}, _, _}} =
+        httpc:request(put, {Url, [], [], "value=1&expected=2"}, [], []),
+
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=1&expected="}, [], []),
 

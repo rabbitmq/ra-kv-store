@@ -9,7 +9,8 @@ define PROJECT_ENV
     {nodes, [{ra_kv1, 'ra_kv_store@127.0.0.1'}]},
     {server_reference, ra_kv1},
     {release_cursor_every, -1},
-    {node_reconnection_interval, 10000}
+    {node_reconnection_interval, 10000},
+    {restart_ra_cluster, false}
 ]
 endef
 

@@ -26,7 +26,16 @@ start(_Type, _Args) ->
     Config = #{},
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
-    start_or_restart_cluster(ClusterId, Machine, Nodes),
+
+    case application:get_env(ra_kv_store, restart_ra_cluster) of
+        {ok, true} ->
+            Node = {ServerReference, node()},
+            error_logger:info_msg("Restarting RA node ~p~n", [Node]),
+            ra:restart_node(Node);
+        {ok, false} ->
+            error_logger:info_msg("Starting RA cluster"),
+            ra:start_cluster(ClusterId, Machine, Nodes)
+    end,
 
     % to make sure nodes are always connected
     {ok, ReconnectInterval} = application:get_env(ra_kv_store, node_reconnection_interval),
@@ -48,17 +57,6 @@ start(_Type, _Args) ->
 
 stop(_State) ->
     ok.
-
-start_or_restart_cluster(ClusterId, Machine,
-    [FirstNode | RemNodes] = NodeIds) ->
-    case ra_nodes_sup:restart_node(FirstNode) of
-        {ok, _} ->
-            %% restart the rest of the nodes
-            [_ = ra_nodes_sup:restart_node(N) || N <- RemNodes],
-            ok;
-        {error, _} ->
-            ra:start_cluster(ClusterId, Machine, NodeIds)
-    end.
 
 connect_nodes(Nodes) ->
     error_logger:info_msg("Reconnecting nodes ~p~n", [Nodes]),
