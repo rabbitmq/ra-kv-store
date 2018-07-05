@@ -170,26 +170,6 @@
       (info node "Called start of Erlang process killer (no-op)")
       :started)
 
-(defn one-random
-      "Select one random element"
-      [coll]
-      (rand-nth coll))
-
-(defn two-random
-      "Select 2 random elements"
-      [coll]
-      ((comp (partial take 2) shuffle) coll))
-
-(defn three-random
-      "Select 3 random elements"
-      [coll]
-      ((comp (partial take 3) shuffle) coll))
-
-(defn all
-      "Select all elements"
-      [coll]
-      (identity))
-
 (defn kill-erlang-process!
       "Kills a random RA Erlang process"
       [test node]
@@ -207,32 +187,47 @@
            (info node erlangProcess "Erlang process killed" erlangEval))
       :killed)
 
-(def kill-erlang-vm-nemesis
+(defn kill-erlang-vm-nemesis
   "A nemesis that kills the Erlang VM on (a) random node(s)"
+  [n]
   (nemesis/node-start-stopper
-    two-random
+    (fn [nodes] ((comp (partial take n) shuffle) nodes))
     kill-erlang-vm!
     start-erlang-vm!)
   )
 
-(def kill-erlang-process-nemesis
+(defn kill-erlang-process-nemesis
   "A nemesis that kills a random RA log process on (a) random node(s)"
+  [n]
   (nemesis/node-start-stopper
-    one-random
+    (fn [nodes] ((comp (partial take n) shuffle) nodes))
     kill-erlang-process!
     start-erlang-process!)
   )
 
 
 (def nemesises
-  "A map of nemesis names to functions that construct nemesises, given opts."
-  {"kill-erlang-vm"            kill-erlang-vm-nemesis
-   "kill-erlang-process"       kill-erlang-process-nemesis
-   "random-partition-halves"   (nemesis/partition-random-halves)
-   "partition-halves"          (nemesis/partition-halves)
-   "partition-majorities-ring" (nemesis/partition-majorities-ring)
-   "partition-random-node"     (nemesis/partition-random-node)
+  "A map of nemesis names."
+  {"kill-erlang-vm"            ""
+   "kill-erlang-process"       ""
+   "random-partition-halves"   ""
+   "partition-halves"          ""
+   "partition-majorities-ring" ""
+   "partition-random-node"     ""
    })
+
+(defn init-nemesis
+      "Returns appropriate nemesis"
+      [opts]
+      (case (:nemesis opts)
+            "kill-erlang-vm"            (kill-erlang-vm-nemesis (:random-nodes opts))
+            "kill-erlang-process"       (kill-erlang-process-nemesis (:random-nodes opts))
+            "random-partition-halves"   (nemesis/partition-random-halves)
+            "partition-halves"          (nemesis/partition-halves)
+            "partition-majorities-ring" (nemesis/partition-majorities-ring)
+            "partition-random-node"     (nemesis/partition-random-node)
+            )
+      )
 
 (def workloads
   "A map of workload names to functions that construct workloads, given opts."
@@ -255,6 +250,10 @@
    [nil "--nemesis NAME" "What nemesis should we use?"
     :missing  (str "--nemesis " (cli/one-of nemesises))
     :validate [nemesises (cli/one-of nemesises)]]
+   [nil "--random-nodes NUM" "Number of nodes disrupted by Erlang VM and Erlang process killing nemesises"
+    :default  1
+    :parse-fn parse-long
+    :validate [pos? "Must be a positive integer."]]
    [nil "--erlang-net-ticktime NUM" "Erlang net tick time in seconds (https://www.rabbitmq.com/nettick.html)."
     :default  -1
     :parse-fn parse-long
@@ -290,7 +289,8 @@
       [opts]
       (let [
             workload  ((get workloads (:workload opts)) opts)
-            nemesis   (get nemesises (:nemesis opts))
+            ;nemesis   (get nemesises (:nemesis opts))
+            nemesis (init-nemesis opts)
             ]
       (merge tests/noop-test
              opts
