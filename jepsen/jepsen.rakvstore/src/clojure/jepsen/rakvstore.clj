@@ -139,7 +139,7 @@
                        :timeline (timeline/html)}))
        :generator (independent/concurrent-generator
                     10
-                    (range)
+                    (repeatedly #(rand-int 75))
                     (fn [k]
                         (->> (gen/mix [r w cas])
                              (gen/limit (:ops-per-key opts)))))})
