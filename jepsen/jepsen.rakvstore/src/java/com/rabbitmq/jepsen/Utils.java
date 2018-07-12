@@ -121,6 +121,10 @@ public class Utils {
         return client.getSet(key);
     }
 
+    public static String node(Client client) {
+        return client.node;
+    }
+
     static Object get(Map<Object, Object> map, String keyStringValue) {
         for (Map.Entry<Object, Object> entry : map.entrySet()) {
             if (keyStringValue.equals(entry.getKey().toString())) {

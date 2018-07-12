@@ -48,7 +48,7 @@
                       (catch com.rabbitmq.jepsen.RaNodeDownException _
                         (assoc op
                                :type  :info
-                               :error :nodedown))
+                               :error (str :nodedown " " (com.rabbitmq.jepsen.Utils/node conn))))
                       (catch java.lang.Exception _
                         (assoc op
                                :type  (if (= :read (:f op)) :fail :info)

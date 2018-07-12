@@ -69,7 +69,7 @@
                            (catch com.rabbitmq.jepsen.RaNodeDownException _
                              (assoc op
                                     :type  :info
-                                    :error :nodedown))
+                                    :error (str :nodedown " " (com.rabbitmq.jepsen.Utils/node conn))))
                            (catch java.lang.Exception _
                              (assoc op
                                     :type  (if (= :read (:f op)) :fail :info)
@@ -174,7 +174,7 @@
       "Kills a random RA Erlang process"
       [test node]
       (let [
-            ; FIXME looks loke the ra_log_segment_writer isn't killed (doesn't show up in the logs)
+            ; FIXME looks like the ra_log_segment_writer isn't killed (doesn't show up in the logs)
             ;erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
             erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer"))
             erlangEval (str "eval 'exit(whereis(" erlangProcess "), killed_by_jepsen).'")
@@ -214,6 +214,7 @@
    "partition-halves"          ""
    "partition-majorities-ring" ""
    "partition-random-node"     ""
+   "combined"                  ""
    })
 
 (defn init-nemesis
@@ -226,6 +227,14 @@
             "partition-halves"          (nemesis/partition-halves)
             "partition-majorities-ring" (nemesis/partition-majorities-ring)
             "partition-random-node"     (nemesis/partition-random-node)
+            "combined"                  (nemesis/compose {{:split-start :start
+                                                           :split-stop  :stop} (nemesis/partition-random-halves)
+                                                          {:kill-erlang-vm-start  :start
+                                                           :kill-erlang-vm-stop  :stop} (kill-erlang-vm-nemesis (:random-nodes opts))
+                                                          {:kill-erlang-process-start  :start
+                                                           :kill-erlang-process-stop  :stop} (kill-erlang-process-nemesis (:random-nodes opts))
+                                                          }
+                                                           )
             )
       )
 
@@ -289,7 +298,6 @@
       [opts]
       (let [
             workload  ((get workloads (:workload opts)) opts)
-            ;nemesis   (get nemesises (:nemesis opts))
             nemesis (init-nemesis opts)
             ]
       (merge tests/noop-test
@@ -306,25 +314,46 @@
               :generator (gen/phases
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
-                                (gen/time-limit (:time-limit opts))
                                 (gen/nemesis
+                                  ;(gen/seq  (cycle [
+                                  ;                  (gen/sleep (:time-before-disruption opts))
+                                  ;                  {:type :info :f :start}
+                                  ;                  (gen/sleep (:disruption-duration opts))
+                                  ;                  {:type :info :f :stop}
+                                  ;                  ])
+                                  ;          )
+
                                   (gen/seq  (cycle [
                                                     (gen/sleep (:time-before-disruption opts))
-                                                    {:type :info :f :start}
+                                                    {:type :info :f :split-start}
+                                                    (gen/stagger (/ (:disruption-duration opts) 8) gen/void)
+                                                    (gen/mix
+                                                               [
+                                                                {:type :info, :f :kill-erlang-vm-start}
+                                                                {:type :info, :f :kill-erlang-process-start}
+                                                                ]
+                                                               )
+                                                    (gen/stagger (/ (:disruption-duration opts) 6) gen/void)
+                                                    {:type :info :f :kill-erlang-vm-stop}
+                                                    {:type :info :f :kill-erlang-process-stop}
                                                     (gen/sleep (:disruption-duration opts))
-                                                    {:type :info :f :stop}
-                                                   ])
+                                                    {:type :info :f :split-stop}
+                                                    ])
                                             )
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           (gen/nemesis (gen/once {:type :info, :f :stop}))
+                           ;(gen/nemesis (gen/once {:type :info, :f :split-stop}))
+
+                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-vm-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
+                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
+
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}
              )))
-              ;}))
 
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for
