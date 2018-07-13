@@ -20,7 +20,19 @@ dep_cowboy_commit = 2.4.0
 
 DEP_PLUGINS = cowboy
 
-rel-jepsen: rel
+clean-rel:
+	rm -rf _rel
+
+clean-deps:
+	rm -rf deps
+
+rel-docker: clean-rel clean-deps
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp erlang:19.3.6.9 make rel
+
+rel-jepsen: rel-docker
+	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
+
+rel-jepsen-local: rel
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 
 include erlang.mk
