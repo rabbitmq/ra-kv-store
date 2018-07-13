@@ -243,6 +243,58 @@
   {"set"      set/workload
    "register" register-workload})
 
+(defn combined-nemesis-generator
+      "Nemesis generator that triggers Erlang VM/process killing during network partition."
+      [opts]
+      {
+       :generator (gen/seq  (cycle [
+                                    (gen/sleep (:time-before-disruption opts))
+                                    {:type :info :f :split-start}
+                                    (gen/stagger (/ (:disruption-duration opts) 8) gen/void)
+                                    (gen/mix
+                                      [
+                                       {:type :info, :f :kill-erlang-vm-start}
+                                       {:type :info, :f :kill-erlang-process-start}
+                                       ]
+                                      )
+                                    (gen/stagger (/ (:disruption-duration opts) 6) gen/void)
+                                    {:type :info :f :kill-erlang-vm-stop}
+                                    {:type :info :f :kill-erlang-process-stop}
+                                    (gen/sleep (:disruption-duration opts))
+                                    {:type :info :f :split-stop}
+                                    ])
+                            )
+       :stop-generator (gen/seq [(gen/once {:type :info, :f :kill-erlang-vm-stop})
+                        (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
+                        (gen/nemesis (gen/once {:type :info, :f :split-stop}))] )
+
+       })
+
+(defn single-nemesis-generator
+      "Nemesis with single disruption."
+      [opts]
+      {
+       :generator (gen/seq  (cycle [
+                         (gen/sleep (:time-before-disruption opts))
+                         {:type :info :f :start}
+                         (gen/sleep (:disruption-duration opts))
+                         {:type :info :f :stop}
+                         ])
+                 )
+       :stop-generator (gen/once {:type :info, :f :stop})
+       })
+
+(def nemesis-generators
+  "Map of nemesis types to nemesis generator."
+  {"combined"                   combined-nemesis-generator
+   "kill-erlang-vm"             single-nemesis-generator
+   "kill-erlang-process"        single-nemesis-generator
+   "random-partition-halves"    single-nemesis-generator
+   "partition-halves"           single-nemesis-generator
+   "partition-majorities-ring"  single-nemesis-generator
+   "partition-random-node"      single-nemesis-generator
+   })
+
 (def cli-opts
   "Additional command line options."
   [["-r" "--rate HZ" "Approximate number of requests per second, per thread."
@@ -299,6 +351,7 @@
       (let [
             workload  ((get workloads (:workload opts)) opts)
             nemesis (init-nemesis opts)
+            nemesis-generator ((get nemesis-generators (:nemesis opts)) opts)
             ]
       (merge tests/noop-test
              opts
@@ -315,41 +368,12 @@
                            (->> (:generator workload)
                                 (gen/stagger (/ (:rate opts)))
                                 (gen/nemesis
-                                  ;(gen/seq  (cycle [
-                                  ;                  (gen/sleep (:time-before-disruption opts))
-                                  ;                  {:type :info :f :start}
-                                  ;                  (gen/sleep (:disruption-duration opts))
-                                  ;                  {:type :info :f :stop}
-                                  ;                  ])
-                                  ;          )
-
-                                  (gen/seq  (cycle [
-                                                    (gen/sleep (:time-before-disruption opts))
-                                                    {:type :info :f :split-start}
-                                                    (gen/stagger (/ (:disruption-duration opts) 8) gen/void)
-                                                    (gen/mix
-                                                               [
-                                                                {:type :info, :f :kill-erlang-vm-start}
-                                                                {:type :info, :f :kill-erlang-process-start}
-                                                                ]
-                                                               )
-                                                    (gen/stagger (/ (:disruption-duration opts) 6) gen/void)
-                                                    {:type :info :f :kill-erlang-vm-stop}
-                                                    {:type :info :f :kill-erlang-process-stop}
-                                                    (gen/sleep (:disruption-duration opts))
-                                                    {:type :info :f :split-stop}
-                                                    ])
-                                            )
+                                  (:generator nemesis-generator)
                                   )
                                 (gen/time-limit (:time-limit opts))
                                 )
                            (gen/log "Healing cluster")
-                           ;(gen/nemesis (gen/once {:type :info, :f :split-stop}))
-
-                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-vm-stop}))
-                           (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
-                           (gen/nemesis (gen/once {:type :info, :f :split-stop}))
-
+                           (gen/nemesis (:stop-generator nemesis-generator))
                            (gen/log "Waiting for recovery")
                            (gen/sleep 10)
                            (gen/clients (:final-generator workload)))}

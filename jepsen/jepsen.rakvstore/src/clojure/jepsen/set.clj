@@ -39,7 +39,7 @@
                                          :value (read-string (com.rabbitmq.jepsen.Utils/getSet conn k)))
 
                             :add (do (com.rabbitmq.jepsen.Utils/addToSet conn k (:value op))
-                                     (assoc op :type :ok)))
+                                     (assoc op :type :ok :error (com.rabbitmq.jepsen.Utils/node conn))))
 
                       (catch com.rabbitmq.jepsen.RaTimeoutException _
                         (assoc op
