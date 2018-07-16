@@ -88,7 +88,7 @@
 (def log-dir "/opt/rakvstore/log")
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
-(def env-variables "RUN_ERL_LOG_MAXSIZE=10000 RUN_ERL_LOG_GENERATIONS=100")
+(def env-variables "ERL_CRASH_DUMP=/opt/rakvstore/log/erl_crash.dump RUN_ERL_LOG_MAXSIZE=1000000 RUN_ERL_LOG_GENERATIONS=100")
 (def binary "/opt/rakvstore/bin/ra_kv_store_release")
 
 (defn db
@@ -127,7 +127,7 @@
                         )
              db/LogFiles
              (log-files [_ test node]
-                        (conj (jepsen.control.util/ls-full log-dir) "/opt/rakvstore/erl_crash.dump")
+                        (conj (jepsen.control.util/ls-full log-dir))
                         )))
 
 (defn register-workload
