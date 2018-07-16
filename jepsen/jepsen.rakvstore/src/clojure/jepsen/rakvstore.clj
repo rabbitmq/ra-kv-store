@@ -219,6 +219,25 @@
    "combined"                  ""
    })
 
+(def network-partition-nemesises
+  "A map of network partition nemesis names"
+  {"random-partition-halves"   ""
+   "partition-halves"          ""
+   "partition-majorities-ring" ""
+   "partition-random-node"     ""
+   })
+
+(defn init-network-partition-nemesis
+      "Returns appropriate network partition nemesis"
+      [opts]
+      (case (:network-partition-nemesis opts)
+            "random-partition-halves"   (nemesis/partition-random-halves)
+            "partition-halves"          (nemesis/partition-halves)
+            "partition-majorities-ring" (nemesis/partition-majorities-ring)
+            "partition-random-node"     (nemesis/partition-random-node)
+            )
+      )
+
 (defn init-nemesis
       "Returns appropriate nemesis"
       [opts]
@@ -230,7 +249,7 @@
             "partition-majorities-ring" (nemesis/partition-majorities-ring)
             "partition-random-node"     (nemesis/partition-random-node)
             "combined"                  (nemesis/compose {{:split-start :start
-                                                           :split-stop  :stop} (nemesis/partition-random-halves)
+                                                           :split-stop  :stop} (init-network-partition-nemesis opts)
                                                           {:kill-erlang-vm-start  :start
                                                            :kill-erlang-vm-stop  :stop} (kill-erlang-vm-nemesis (:random-nodes opts))
                                                           {:kill-erlang-process-start  :start
@@ -313,6 +332,10 @@
    [nil "--nemesis NAME" "What nemesis should we use?"
     :missing  (str "--nemesis " (cli/one-of nemesises))
     :validate [nemesises (cli/one-of nemesises)]]
+   [nil "--network-partition-nemesis NAME" "What network partition nemesis should we use (only for combined nemesis)? Default is random-partition-halves"
+    :default  "random-partition-halves"
+    :missing  (str "--network-partition-nemesis " (cli/one-of network-partition-nemesises))
+    :validate [network-partition-nemesises (cli/one-of network-partition-nemesises)]]
    [nil "--random-nodes NUM" "Number of nodes disrupted by Erlang VM and Erlang process killing nemesises"
     :default  1
     :parse-fn parse-long

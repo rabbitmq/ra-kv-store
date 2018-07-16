@@ -75,8 +75,16 @@ Most common options to use:
  * `--concurrency`: number of workers to run
  * `--rate`: number of requests per thread
  * `--workload`: the type of test, can be `register` or `set`
- * `--nemesis`: the type of nemesis, can be `random-partition-halves`, `kill-erlang-vm` or `kill-erlang-process`
+ * `--nemesis`: the type of nemesis, can be `random-partition-halves`,
+ `partition-halves`, `partition-majorities-ring`, `random-node`
+ `kill-erlang-vm`, `kill-erlang-process`, or `combined` (see below for the `combined` nemesis)
+ * `--network-partition-nemesis`: the type of network partition nemesis to use with the
+ `combined` nemesis. Can be `random-partition-halves`, `partition-halves`,
+ `partition-majorities-ring` or `random-node`. Default is `random-partition-halves`.
  * `--erlang-net-ticktime`: Erlang net tick time (in seconds)
+ * `--release-cursor-every`: release RA cursor every n operations
+ * `--wal-max-size-bytes`: maximum size of RA Write Ahead Log, default is 134217728 (128 MB)
+ * `--random-nodes`: number of nodes disrupted by Erlang VM and Erlang process killing nemesises
  * `--time-before-disruption`: time before the nemesis kicks in (in seconds)
  * `--disruption-duration`: duration of disruption (in seconds)
 
@@ -85,6 +93,11 @@ by a key. The supported operations are read, write, and compare-and-set. The `se
 tests the RA KV Store cluster as a set (a collection of distinct elements stored in the
 same key). The `register` workload is more general but also more "expensive" (understand
 more resource-consuming when it comes to find bugs) than the `set` test.
+
+The `combined` nemesis creates a network partition and randomly kills the Erlang VM or Erlang
+processes on random nodes (`--random-nodes` option) during the partition. The network partition
+strategy can be chosen with the `--network-partition-nemesis` option when using the `combined` nemesis,
+the default being `random-partition-halves`.
 
 ## Usage (Vagrant)
 
