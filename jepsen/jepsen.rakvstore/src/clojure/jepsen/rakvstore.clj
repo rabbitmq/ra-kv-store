@@ -119,7 +119,7 @@
                           (if (not= "" (try
                                          (c/exec :pgrep :beam)
                                          (catch RuntimeException _ "")))
-                            (c/exec binary "stop")
+                            (c/exec* env-variables binary "stop")
                             (do (info node "RA KV Store already stopped")
                                 ))
 ;                          (c/exec :rm :-rf dir)
@@ -155,7 +155,7 @@
                        (catch RuntimeException _ "")))
           (info node "RA KV Store already running.")
           (do (info node "Starting RA KV Store...")
-              (c/exec* binary "start -ra_kv_store restart_ra_cluster 'true'")
+              (c/exec* env-variables binary "start -ra_kv_store restart_ra_cluster 'true'")
               (info node "RA KV Store started"))))
       :started)
 
