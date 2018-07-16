@@ -99,6 +99,7 @@
                      (info node "installing RA KV Store")
                      (c/su
                        (c/exec :rm :-rf "/tmp/ra_kv_store")
+                       (c/exec :rm :-rf dir)
                        (let [url releasefile]
                             (cu/install-archive! url dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
@@ -121,12 +122,12 @@
                             (c/exec binary "stop")
                             (do (info node "RA KV Store already stopped")
                                 ))
-                          (c/exec :rm :-rf dir)
+;                          (c/exec :rm :-rf dir)
                           )
                         )
              db/LogFiles
              (log-files [_ test node]
-                        (jepsen.control.util/ls-full log-dir)
+                        (conj (jepsen.control.util/ls-full log-dir) "/opt/rakvstore/erl_crash.dump")
                         )))
 
 (defn register-workload
