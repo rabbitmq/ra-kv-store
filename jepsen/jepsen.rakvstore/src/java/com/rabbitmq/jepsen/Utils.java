@@ -55,11 +55,7 @@ public class Utils {
         Long megaBytes128 = 134217728L;
         walMaxSizeBytes = walMaxSizeBytes == null ? megaBytes128 : Long.parseLong(walMaxSizeBytes.toString());
 
-        List<String> nodes = nodesObj.stream().map(o -> {
-            String node = o.toString();
-            String nodeIndex = node.substring(node.length() - 1, node.length());
-            return String.format("{ra_kv%s, 'kv@%s'}", nodeIndex, node);
-        }).collect(Collectors.toList());
+        List<String> nodes = nodesObj.stream().map(Utils::raNodeId).collect(Collectors.toList());
 
         String node = currentNode.toString();
         String nodeIndex = node.substring(node.length() - 1, node.length());
@@ -79,6 +75,12 @@ public class Utils {
             + "].", walMaxSizeBytes, String.join(", ", nodes), nodeIndex, releaseCursorEvery);
 
         return configuration;
+    }
+
+    public static String raNodeId(Object n) {
+        String node = n.toString();
+        String nodeIndex = node.substring(node.length() - 1, node.length());
+        return String.format("{ra_kv%s, 'kv@%s'}", nodeIndex, node);
     }
 
     static String erlangNetTickTime(Map<Object, Object> test) {

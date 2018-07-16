@@ -86,6 +86,7 @@
 ;(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
 (def dir "/opt/rakvstore")
 (def log-dir "/opt/rakvstore/log")
+(def status-file "/opt/rakvstore/log/status.dump")
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
 (def env-variables "ERL_CRASH_DUMP=/opt/rakvstore/log/erl_crash.dump RUN_ERL_LOG_MAXSIZE=1000000 RUN_ERL_LOG_GENERATIONS=100")
@@ -127,6 +128,20 @@
                         )
              db/LogFiles
              (log-files [_ test node]
+                        (c/su
+                          (if (not= "" (try
+                                         (c/exec :pgrep :beam)
+                                         (catch RuntimeException _ "")))
+                            (do
+                              (let [
+                                    ra-node-id (com.rabbitmq.jepsen.Utils/raNodeId node)
+                                    erlang-eval (str "eval \"sys:get_status(" ra-node-id ").\"")
+                                    ]
+                                   (c/exec* binary erlang-eval ">" status-file)
+                                   ))
+                            (do (info node "RA KV Store stopped, cannot get status")
+                                ))
+                          )
                         (conj (jepsen.control.util/ls-full log-dir))
                         )))
 

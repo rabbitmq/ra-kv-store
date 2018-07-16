@@ -178,6 +178,12 @@ public class UtilsTest {
     }
 
     @Test
+    public void raNodeId() {
+        assertEquals("{ra_kv1, 'kv@n1'}", Utils.raNodeId("n1"));
+        assertEquals("{ra_kv2, 'kv@n2'}", Utils.raNodeId("n2"));
+    }
+
+    @Test
     public void writeGet() throws Exception {
         assertNull(client.get(KEY));
         Utils.write(client, KEY, "23");
