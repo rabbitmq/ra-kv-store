@@ -9,5 +9,4 @@
             :url "http://www.apache.org/licenses/LICENSE-2.0.html"}
   :main jepsen.rakvstore
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [commons-io/commons-io "2.6"]
                  [jepsen "0.1.10"]])
