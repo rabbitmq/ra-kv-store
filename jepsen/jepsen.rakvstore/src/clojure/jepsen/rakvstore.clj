@@ -88,6 +88,7 @@
 (def log-dir "/opt/rakvstore/log")
 (def configurationFile "/opt/rakvstore/releases/1/sys.config")
 (def vmArgsFile "/opt/rakvstore/releases/1/vm.args")
+(def env-variables "RUN_ERL_LOG_MAXSIZE=10000 RUN_ERL_LOG_GENERATIONS=100")
 (def binary "/opt/rakvstore/bin/ra_kv_store_release")
 
 (defn db
@@ -107,7 +108,7 @@
                             (c/exec :echo vmArgs :| :tee vmArgsFile)
                             )
                        (c/exec :mkdir log-dir)
-                       (c/exec binary "start")
+                       (c/exec* env-variables binary "start")
                        (Thread/sleep 2000)
                        )
                      )

@@ -10,4 +10,4 @@
   :main jepsen.rakvstore
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [commons-io/commons-io "2.6"]
-                 [jepsen "0.1.9"]])
+                 [jepsen "0.1.10"]])

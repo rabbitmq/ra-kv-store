@@ -12,6 +12,10 @@ ra-kv-store $ make rel-jepsen
 cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 ```
 
+Note `make rel-jepsen` uses Docker to compile the Erlang application: this makes the resulting
+Erlang release runnable in Jepsen's Docker containers. This is useful for MacOS users. If you're
+running Linux, you can build the release with `make rel-jepsen-local`.
+
 `cd` into the `jepsen` directory and set the `JEPSEN_ROOT` environment variable:
 ```
 ra-kv-store $ cd jepsen
@@ -42,7 +46,7 @@ $ cd jepsen.rakvstore
 $ lein run test --time-limit 15 --concurrency 10 --rate 1 --workload set --nemesis random-partition-halves
 ```
 
-The execution should finish with something like the following:
+The execution should finish with something like:
 
 ```
 INFO [2018-06-25 08:45:23,157] jepsen test runner - jepsen.core {:ok-count 83,
