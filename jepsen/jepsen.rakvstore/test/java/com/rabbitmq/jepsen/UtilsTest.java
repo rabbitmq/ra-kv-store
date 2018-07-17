@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -186,7 +187,10 @@ public class UtilsTest {
     @Test
     public void writeGet() throws Exception {
         assertNull(client.get(KEY));
-        Utils.write(client, KEY, "23");
+        Utils.Response response = Utils.write(client, KEY, "23");
+        assertTrue(response.isOk());
+        assertFalse(response.getHeaders().isEmpty());
+        assertTrue(response.getHeaders().keySet().toString().equals("[term, leader, index]"));
         assertEquals("23", client.get(KEY));
     }
 
@@ -194,18 +198,30 @@ public class UtilsTest {
     public void cas() throws Exception {
         Utils.write(client, KEY, "1");
         assertEquals("1", client.get(KEY));
-        assertTrue(client.cas(KEY, "1", "2"));
+        Utils.Response response = client.cas(KEY, "1", "2");
+        assertTrue(response.isOk());
+        assertFalse(response.getHeaders().isEmpty());
+        assertTrue(response.getHeaders().keySet().toString().equals("[term, leader, index]"));
         assertEquals("2", client.get(KEY));
-        assertFalse(client.cas(KEY, "1", "2"));
+        response = client.cas(KEY, "1", "2");
+        assertTrue(response.getHeaders().keySet().toString().equals("[term, leader, index]"));
+        assertFalse(response.isOk());
         assertEquals("2", client.get(KEY));
     }
 
     @Test
     public void casWithNull() throws Exception {
-        assertFalse(client.cas(KEY, "2", "1"));
-        assertTrue(client.cas(KEY, "", "1"));
+        Utils.Response response = client.cas(KEY, "2", "1");
+        assertFalse(response.isOk());
+        response = client.cas(KEY, "", "1");
+        assertTrue(response.isOk());
+        assertFalse(response.getHeaders().isEmpty());
+        assertTrue(response.getHeaders().keySet().toString().equals("[term, leader, index]"));
         assertEquals("1", client.get(KEY));
-        assertFalse(client.cas(KEY, "", "2"));
+        response = client.cas(KEY, "", "2");
+        assertFalse(response.isOk());
+        assertFalse(response.getHeaders().isEmpty());
+        assertTrue(response.getHeaders().keySet().toString().equals("[term, leader, index]"));
         assertEquals("1", client.get(KEY));
     }
 
@@ -255,13 +271,17 @@ public class UtilsTest {
         Map<String, String> referenceMap = new ConcurrentHashMap<>();
         Random random = new Random();
         long start = System.currentTimeMillis();
+        AtomicBoolean someResponseIsNull = new AtomicBoolean(false);
         while ((System.currentTimeMillis() - start) < 10_000) {
             IntStream.range(0, concurrency).forEach(i -> {
                 executorService.submit(() -> {
                     String value = values.get(random.nextInt(values.size()));
                     referenceMap.put(value, "");
                     try {
-                        client.addToSet(KEY, value);
+                        Utils.Response response = client.addToSet(KEY, value);
+                        if (response == null) {
+                            someResponseIsNull.set(true);
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -271,6 +291,9 @@ public class UtilsTest {
         }
         executorService.shutdown();
         assertTrue(executorService.awaitTermination(5, TimeUnit.SECONDS));
+
+        assertFalse("No response should be null", someResponseIsNull.get());
+
         Set<String> referenceSet = referenceMap.keySet();
 
         List<Integer> setInDbAsList = asList(client.get(KEY).split(" "))

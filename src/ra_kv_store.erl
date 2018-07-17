@@ -20,7 +20,8 @@
 
 write(ServerReference, Key, Value) ->
     case ra:send_and_await_consensus(ServerReference, {write, Key, Value}) of
-        {ok, _, _} -> ok;
+        {ok, {Index, Term}, LeaderRaNodeId} ->
+            {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
     end.
 
@@ -30,7 +31,8 @@ read(ServerReference, Key) ->
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
     case ra:send_and_await_consensus(ServerReference, {cas, Key, ExpectedValue, NewValue}) of
-        {ok, ReadValue, _} -> ReadValue;
+        {ok, {{read, ReadValue}, {index, Index}, {term, Term}}, LeaderRaNodeId} ->
+            {ok, {{read, ReadValue}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
     end.
 
@@ -40,7 +42,7 @@ apply(#{index := Index} = _Metadata, {write, Key, Value}, _, State) ->
     NewState = maps:put(Key, Value, State),
     SideEffects = side_effects(Index, NewState),
     {NewState, SideEffects};
-apply(#{index := Index} = _Metadata, {cas, Key, ExpectedValue, NewValue}, _, State) ->
+apply(#{index := Index, term := Term} = _Metadata, {cas, Key, ExpectedValue, NewValue}, _, State) ->
     {NewState, ReadValue} = case maps:get(Key, State, undefined) of
         ExpectedValue ->
             {maps:put(Key, NewValue, State), ExpectedValue};
@@ -48,7 +50,7 @@ apply(#{index := Index} = _Metadata, {cas, Key, ExpectedValue, NewValue}, _, Sta
             {State, ValueInStore}
     end,
     SideEffects = side_effects(Index, NewState),
-    {NewState, SideEffects, ReadValue}.
+    {NewState, SideEffects, {{read, ReadValue}, {index, Index}, {term, Term}}}.
 
 side_effects(RaftIndex, MachineState) ->
     case application:get_env(ra_kv_store, release_cursor_every) of

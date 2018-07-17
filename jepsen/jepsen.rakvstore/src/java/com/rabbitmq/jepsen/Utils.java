@@ -25,6 +25,8 @@ import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -34,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -107,16 +110,16 @@ public class Utils {
         return client.get(key);
     }
 
-    public static void write(Client client, Object key, Object value) throws Exception {
-        client.write(key, value);
+    public static Response write(Client client, Object key, Object value) throws Exception {
+        return client.write(key, value);
     }
 
-    public static boolean cas(Client client, Object key, Object oldValue, Object newValue) throws Exception {
+    public static Response cas(Client client, Object key, Object oldValue, Object newValue) throws Exception {
         return client.cas(key, oldValue, newValue);
     }
 
-    public static void addToSet(Client client, Object key, Object value) throws Exception {
-        client.addToSet(key, value);
+    public static Response addToSet(Client client, Object key, Object value) throws Exception {
+        return client.addToSet(key, value);
     }
 
     public static String getSet(Client client, Object key) throws Exception {
@@ -234,10 +237,11 @@ public class Utils {
             });
         }
 
-        void write(Object key, Object value) throws Exception {
-            request(() -> {
+        Response write(Object key, Object value) throws Exception {
+            return request(() -> {
                 URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
                 HttpURLConnection conn = null;
+                Response response = null;
                 try {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("PUT");
@@ -246,11 +250,12 @@ public class Utils {
                         out.write("value=" + value.toString());
                     }
                     conn.getInputStream();
+                    response = new Response(true, raHeaders(conn));
                 } catch (Exception e) {
                     int responseCode = conn.getResponseCode();
                     String responseBody = response(conn.getErrorStream());
                     if (responseCode == 503 && "RA timeout".equals(responseBody)) {
-                        throw new RaTimeoutException();
+                        throw new RaTimeoutException(raHeaders(conn));
                     } else {
                         throw e;
                     }
@@ -259,11 +264,11 @@ public class Utils {
                         conn.disconnect();
                     }
                 }
-                return null;
+                return response;
             });
         }
 
-        boolean cas(Object key, Object oldValue, Object newValue) throws Exception {
+        Response cas(Object key, Object oldValue, Object newValue) throws Exception {
             return request(() -> {
                 CasRequest request = LOG.casRequest(node, oldValue, newValue);
                 URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
@@ -277,15 +282,15 @@ public class Utils {
                     }
                     conn.getInputStream();
                     LOG.statusCode(request, conn.getResponseCode());
-                    return true;
+                    return new Response(true, raHeaders(conn));
                 } catch (Exception e) {
                     int responseCode = conn.getResponseCode();
                     String responseBody = response(conn.getErrorStream());
                     LOG.statusCode(request, responseCode);
                     if (responseCode == 409) {
-                        return false;
+                        return new Response(false, raHeaders(conn));
                     } else if (responseCode == 503 && "RA timeout".equals(responseBody)) {
-                        throw new RaTimeoutException();
+                        throw new RaTimeoutException(raHeaders(conn));
                     } else {
                         throw e;
                     }
@@ -295,6 +300,16 @@ public class Utils {
                     }
                 }
             });
+        }
+
+        Map<String, String> raHeaders(HttpURLConnection c) {
+            Map<String, String> headers = new LinkedHashMap<>();
+            for (Map.Entry<String, List<String>> entry : c.getHeaderFields().entrySet()) {
+                if (entry.getKey() != null && entry.getKey().startsWith("ra_")) {
+                    headers.put(entry.getKey().replaceFirst("ra_", ""), String.join(",", entry.getValue()));
+                }
+            }
+            return headers;
         }
 
         /**
@@ -308,7 +323,8 @@ public class Utils {
          * @param value
          * @throws Exception
          */
-        public void addToSet(Object key, Object value) throws Exception {
+        public Response addToSet(Object key, Object value) throws Exception {
+            AtomicReference<Response> response = new AtomicReference<>();
             request(() -> {
 
                 RequestAttempt requestAttempt = LOG.requestAttempt(node, value);
@@ -322,7 +338,9 @@ public class Utils {
                         LOG.attempt(requestAttempt);
                         LOG.step(requestAttempt, () -> "sending cas operation for empty set");
                         try {
-                            result.set(cas(key.toString(), "", value.toString()));
+                            Response casResponse = cas(key.toString(), "", value.toString());
+                            result.set(casResponse.isOk());
+                            response.set(casResponse);
                         } catch (RaTimeoutException e) {
                             LOG.step(requestAttempt, () -> "cas operation timed out, result isn't indeterminate");
                             throw e;
@@ -342,14 +360,19 @@ public class Utils {
                             LOG.alreadyInSet(requestAttempt);
                             LOG.step(requestAttempt, () -> "value already in the set, returning true");
                             // already in the set, nothing to do
-                            return true;
+                            Response casResponse = new Response(true, Collections.emptyMap());
+                            result.set(casResponse.isOk());
+                            response.set(casResponse);
+                            return result.get();
                         }
                     }
                     LOG.attempt(requestAttempt);
                     LOG.step(requestAttempt, () -> "value not already in the set");
                     LOG.step(requestAttempt, () -> "sending cas option");
                     try {
-                        result.set(cas(key, currentValue, currentValue + " " + valueAsString));
+                        Response casResponse = cas(key, currentValue, currentValue + " " + valueAsString);
+                        result.set(casResponse.isOk());
+                        response.set(casResponse);
                     } catch (RaTimeoutException e) {
                         LOG.step(requestAttempt, () -> "cas operation timed out, result isn't indeterminate");
                         throw e;
@@ -363,6 +386,7 @@ public class Utils {
                 });
                 return null;
             });
+            return response.get();
         }
 
         private void retry(Callable<Boolean> operation) throws Exception {
@@ -375,15 +399,19 @@ public class Utils {
         }
 
         private String response(InputStream inputStream) throws IOException {
-            StringBuilder content = new StringBuilder();
-            try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(inputStream))) {
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    content.append(inputLine);
+            if (inputStream != null) {
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(inputStream))) {
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        content.append(inputLine);
+                    }
                 }
+                return content.toString();
+            } else {
+                return "";
             }
-            return content.toString();
         }
 
         /**
@@ -518,6 +546,33 @@ public class Utils {
                 ", expectedValue='" + expectedValue + '\'' +
                 ", newValue='" + newValue + '\'' +
                 ", statusCode=" + statusCode +
+                '}';
+        }
+    }
+
+    public static class Response {
+
+        private final Map<String, String> headers;
+        private final boolean ok;
+
+        public Response(boolean ok, Map<String, String> headers) {
+            this.headers = headers;
+            this.ok = ok;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        public boolean isOk() {
+            return ok;
+        }
+
+        @Override
+        public String toString() {
+            return "Response{" +
+                "headers=" + headers +
+                ", ok=" + ok +
                 '}';
         }
     }

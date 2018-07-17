@@ -74,17 +74,29 @@ http_handler(_Config) ->
     {ok, {{_, 404, _}, _, _}} =
         httpc:request(get, {Url, []}, [], []),
 
-    {ok, {{_, 204, _}, _, _}} =
+    {ok, {{_, 204, _}, Headers1, _}} =
         httpc:request(put, {Url, [], [], "value=1"}, [], []),
+
+    "3" = proplists:get_value("ra_index", Headers1),
+    "1" = proplists:get_value("ra_term", Headers1),
+    "ra_kv1" = proplists:get_value("ra_leader", Headers1),
 
     {ok, {{_, 200, _}, _, "1"}} =
         httpc:request(get, {Url, []}, [], []),
 
-    {ok, {{_, 204, _}, _, _}} =
+    {ok, {{_, 204, _}, Headers2, _}} =
         httpc:request(put, {Url, [], [], "value=2&expected=1"}, [], []),
 
-    {ok, {{_, 409, _}, _, "2"}} =
+    "5" = proplists:get_value("ra_index", Headers2),
+    "1" = proplists:get_value("ra_term", Headers2),
+    "ra_kv1" = proplists:get_value("ra_leader", Headers2),
+
+    {ok, {{_, 409, _}, Headers3, "2"}} =
         httpc:request(put, {Url, [], [], "value=99&expected=1"}, [], []),
+
+    "6" = proplists:get_value("ra_index", Headers3),
+    "1" = proplists:get_value("ra_term", Headers3),
+    "ra_kv1" = proplists:get_value("ra_leader", Headers3),
 
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=3&expected=2"}, [], []),

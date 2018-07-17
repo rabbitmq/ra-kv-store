@@ -38,13 +38,14 @@
                                          :type :ok,
                                          :value (read-string (com.rabbitmq.jepsen.Utils/getSet conn k)))
 
-                            :add (do (com.rabbitmq.jepsen.Utils/addToSet conn k (:value op))
-                                     (assoc op :type :ok :error (com.rabbitmq.jepsen.Utils/node conn))))
+                            :add (do (let [result (com.rabbitmq.jepsen.Utils/addToSet conn k (:value op))]
+                                     (assoc op :type :ok :error (str (com.rabbitmq.jepsen.Utils/node conn) " " (.getHeaders result)))))
+                            )
 
-                      (catch com.rabbitmq.jepsen.RaTimeoutException _
+                      (catch com.rabbitmq.jepsen.RaTimeoutException rtex
                         (assoc op
                                :type  :info
-                               :error :timeout))
+                               :error (str :timeout " " (.getHeaders rtex))))
                       (catch com.rabbitmq.jepsen.RaNodeDownException _
                         (assoc op
                                :type  :info

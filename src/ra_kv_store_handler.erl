@@ -51,19 +51,28 @@ init(Req0=#{method := <<"PUT">>}, State) ->
     Req = case Expected of
         not_present ->
             case ra_kv_store:write(ServerReference, Key, Value) of
-                ok ->
-                    cowboy_req:reply(204, #{}, Req1);
+                {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}} ->
+                    cowboy_req:reply(
+                        204,
+                        #{"ra_index" => to_list(Index), "ra_term" => to_list(Term), "ra_leader" => to_list(LeaderRaNodeId)},
+                        Req1);
                 timeout ->
                     cowboy_req:reply(503, #{}, "RA timeout", Req1)
             end;
         Expected ->
             case ra_kv_store:cas(ServerReference, Key, Expected, Value) of
-                Expected ->
-                    cowboy_req:reply(204, #{}, Req1);
+                {ok, {{read, Expected}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}} ->
+                    cowboy_req:reply(
+                        204,
+                        #{"ra_index" => to_list(Index), "ra_term" => to_list(Term), "ra_leader" => to_list(LeaderRaNodeId)},
+                        Req1);
                 timeout ->
                     cowboy_req:reply(503, #{}, "RA timeout", Req1);
-                ReadValue ->
-                    cowboy_req:reply(409, #{}, to_list(ReadValue), Req1)
+                {ok, {{read, ReadValue}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}} ->
+                    cowboy_req:reply(
+                        409,
+                        #{"ra_index" => to_list(Index), "ra_term" => to_list(Term), "ra_leader" => to_list(LeaderRaNodeId)},
+                        to_list(ReadValue), Req1)
             end
     end,
 	{ok, Req, State};
@@ -77,5 +86,6 @@ init(Req0, State) ->
 to_list(Val) when is_list(Val)    -> Val;
 to_list(Val) when is_atom(Val)    -> atom_to_list(Val);
 to_list(Val) when is_binary(Val)  -> binary_to_list(Val);
-to_list(Val) when is_integer(Val) -> integer_to_list(Val).
+to_list(Val) when is_integer(Val) -> integer_to_list(Val);
+to_list(Val) -> lists:flatten(io_lib:format("~p", [Val])).
 
