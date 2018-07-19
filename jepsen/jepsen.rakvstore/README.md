@@ -2,9 +2,20 @@
 
 This work is based on [Jepsen tutorial](https://github.com/jepsen-io/jepsen/blob/master/doc/tutorial/index.md).
 
-## Usage (Docker)
+## Building the Erlang release
 
-In the **root directory**, package the Erlang application and copy it in the Jepsen test directory:
+You must be in the project **root directory** to build the Erlang release. The Erlang
+release needs to be built on Linux-based system, as this is where it executes in Jepsen tests.
+
+### Package locally if you run Linux
+
+```
+ra-kv-store $ make rel-jepsen-local
+...
+cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
+```
+
+### Package with Docker if you run macOS
 
 ```
 ra-kv-store $ make rel-jepsen
@@ -12,9 +23,29 @@ ra-kv-store $ make rel-jepsen
 cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 ```
 
-Note `make rel-jepsen` uses Docker to compile the Erlang application: this makes the resulting
-Erlang release runnable in Jepsen's Docker containers. This is useful for MacOS users. If you're
-running Linux, you can build the release with `make rel-jepsen-local`.
+Right now the Docker packaging uses Erlang 19. Use the Vagrant packaging to use
+a more recent version of Erlang.
+
+### Package with Vagrant if you run macOS
+
+```
+ra-kv-store $ vagrant up
+ra-kv-store $ vagrant ssh
+```
+
+Then inside the VM:
+
+```
+~ $ cd /vagrant/
+vagrant $ make rel-jepsen-local
+...
+cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
+```
+
+## Running Jepsen tests with Docker
+
+**Make sure the Erlang release file `ra_kv_store_release-1.tar.gz` is in the
+`jepsen/jepsen.rakvstore/` directory.**
 
 `cd` into the `jepsen` directory and set the `JEPSEN_ROOT` environment variable:
 ```
@@ -99,7 +130,7 @@ processes on random nodes (`--random-nodes` option) during the partition. The ne
 strategy can be chosen with the `--network-partition-nemesis` option when using the `combined` nemesis,
 the default being `random-partition-halves`.
 
-## Usage (Vagrant)
+## Running Jepsen tests with Vagrant (outdated)
 
 In the **root directory**, package the Erlang application and copy it in the Jepsen test directory:
 
