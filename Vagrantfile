@@ -69,5 +69,6 @@ Vagrant.configure("2") do |config|
      sudo apt-get update
      sudo apt-get install -y esl-erlang=1:20.3.6
      sudo apt-get install -y git make leiningen
+     sudo apt-get install -y openjdk-8-jre openjdk-8-jre-headless libjna-java
   SHELL
 end
