@@ -64,7 +64,7 @@ Vagrant.configure("2") do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
-     wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
+     wget --continue https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
      sudo dpkg -i erlang-solutions_1.0_all.deb
      sudo apt-get update
      sudo apt-get install -y esl-erlang=1:20.3.6
