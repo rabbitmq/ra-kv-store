@@ -68,6 +68,6 @@ Vagrant.configure("2") do |config|
      sudo dpkg -i erlang-solutions_1.0_all.deb
      sudo apt-get update
      sudo apt-get install -y esl-erlang=1:20.3.6
-     sudo apt-get install -y git
+     sudo apt-get install -y git make leiningen
   SHELL
 end
