@@ -19,7 +19,7 @@
 -export([init/1, apply/4, write/3, read/2, cas/4]).
 
 write(ServerReference, Key, Value) ->
-    case ra:send_and_await_consensus(ServerReference, {write, Key, Value}) of
+    case ra:process_command(ServerReference, {write, Key, Value}) of
         {ok, {Index, Term}, LeaderRaNodeId} ->
             {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
@@ -30,7 +30,7 @@ read(ServerReference, Key) ->
     Value.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
-    case ra:send_and_await_consensus(ServerReference, {cas, Key, ExpectedValue, NewValue}) of
+    case ra:process_command(ServerReference, {cas, Key, ExpectedValue, NewValue}) of
         {ok, {{read, ReadValue}, {index, Index}, {term, Term}}, LeaderRaNodeId} ->
             {ok, {{read, ReadValue}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
@@ -64,9 +64,7 @@ side_effects(RaftIndex, MachineState) ->
                     [{release_cursor, RaftIndex, MachineState}];
                 _ ->
                     []
-            end;
-        _ ->
-            []
+            end
     end.
 
 release_cursor(Index, Every) ->

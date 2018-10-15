@@ -25,16 +25,17 @@ start(_Type, _Args) ->
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
     Machine = {module, ra_kv_store, Config},
-    application:ensure_all_started(ra),
+    ok = ra:start(),
 
     case application:get_env(ra_kv_store, restart_ra_cluster) of
         {ok, true} ->
             Node = {ServerReference, node()},
             error_logger:info_msg("Restarting RA node ~p~n", [Node]),
-            ra:restart_node(Node);
+            ok = ra:restart_server(Node);
         {ok, false} ->
             error_logger:info_msg("Starting RA cluster"),
-            ra:start_cluster(ClusterId, Machine, Nodes)
+            {ok, _, _} = ra:start_cluster(ClusterId, Machine, Nodes),
+            ok
     end,
 
     % to make sure nodes are always connected
