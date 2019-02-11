@@ -32,6 +32,7 @@ group() -> [].
 
 init_per_suite(Config) ->
     application:load(ra),
+    logger:set_primary_config(level, all),
     WorkDirectory = proplists:get_value(priv_dir, Config),
     ok = application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
     Config.
@@ -51,11 +52,12 @@ http_handler(_Config) ->
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
     {ok, _, _} = ra:start_cluster(ClusterId, Machine, Nodes),
+    {ok, _, {Leader, _}} = ra:members(hd(Nodes)),
 
     application:ensure_all_started(cowboy),
 
     Dispatch = cowboy_router:compile([
-        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ra_kv1}]}]}
+        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, Leader}]}]}
     ]),
 
     {ok, Socket} = gen_tcp:listen(0, []),
@@ -77,9 +79,11 @@ http_handler(_Config) ->
     {ok, {{_, 204, _}, Headers1, _}} =
         httpc:request(put, {Url, [], [], "value=1"}, [], []),
 
+    LeaderAsList = atom_to_list(Leader),
+
     "3" = proplists:get_value("ra_index", Headers1),
     "1" = proplists:get_value("ra_term", Headers1),
-    "ra_kv1" = proplists:get_value("ra_leader", Headers1),
+    LeaderAsList = proplists:get_value("ra_leader", Headers1),
 
     {ok, {{_, 200, _}, _, "1"}} =
         httpc:request(get, {Url, []}, [], []),
@@ -89,14 +93,14 @@ http_handler(_Config) ->
 
     "5" = proplists:get_value("ra_index", Headers2),
     "1" = proplists:get_value("ra_term", Headers2),
-    "ra_kv1" = proplists:get_value("ra_leader", Headers2),
+    LeaderAsList = proplists:get_value("ra_leader", Headers2),
 
     {ok, {{_, 409, _}, Headers3, "2"}} =
         httpc:request(put, {Url, [], [], "value=99&expected=1"}, [], []),
 
     "6" = proplists:get_value("ra_index", Headers3),
     "1" = proplists:get_value("ra_term", Headers3),
-    "ra_kv1" = proplists:get_value("ra_leader", Headers3),
+    LeaderAsList = proplists:get_value("ra_leader", Headers3),
 
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=3&expected=2"}, [], []),

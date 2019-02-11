@@ -16,7 +16,11 @@
 -module(ra_kv_store).
 -behaviour(ra_machine).
 
--export([init/1, apply/4, write/3, read/2, cas/4]).
+-export([init/1,
+         apply/3,
+         write/3,
+         read/2,
+         cas/4]).
 
 write(ServerReference, Key, Value) ->
     case ra:process_command(ServerReference, {write, Key, Value}) of
@@ -26,7 +30,10 @@ write(ServerReference, Key, Value) ->
     end.
 
 read(ServerReference, Key) ->
-    {ok, {_, Value}, _} = ra:consistent_query(ServerReference, fun(State) -> maps:get(Key, State, undefined) end),
+    {ok, Value, _} = ra:consistent_query(ServerReference,
+                                         fun(State) ->
+                                                 maps:get(Key, State, undefined)
+                                         end),
     Value.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
@@ -36,13 +43,16 @@ cas(ServerReference, Key, ExpectedValue, NewValue) ->
         {timeout, _} -> timeout
     end.
 
-init(_Config) -> {#{}, []}.
+init(_Config) -> #{}.
 
-apply(#{index := Index} = _Metadata, {write, Key, Value}, _, State) ->
+apply(#{index := Index,
+        term := Term} = _Metadata, {write, Key, Value}, State) ->
     NewState = maps:put(Key, Value, State),
     SideEffects = side_effects(Index, NewState),
-    {NewState, SideEffects};
-apply(#{index := Index, term := Term} = _Metadata, {cas, Key, ExpectedValue, NewValue}, _, State) ->
+    %% return the index and term here as a result
+    {NewState, {Index, Term}, SideEffects};
+apply(#{index := Index, term := Term} = _Metadata,
+      {cas, Key, ExpectedValue, NewValue}, State) ->
     {NewState, ReadValue} = case maps:get(Key, State, undefined) of
         ExpectedValue ->
             {maps:put(Key, NewValue, State), ExpectedValue};
@@ -50,7 +60,7 @@ apply(#{index := Index, term := Term} = _Metadata, {cas, Key, ExpectedValue, New
             {State, ValueInStore}
     end,
     SideEffects = side_effects(Index, NewState),
-    {NewState, SideEffects, {{read, ReadValue}, {index, Index}, {term, Term}}}.
+    {NewState, {{read, ReadValue}, {index, Index}, {term, Term}}, SideEffects}.
 
 side_effects(RaftIndex, MachineState) ->
     case application:get_env(ra_kv_store, release_cursor_every) of

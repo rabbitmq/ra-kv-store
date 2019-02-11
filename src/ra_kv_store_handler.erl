@@ -54,7 +54,9 @@ init(Req0=#{method := <<"PUT">>}, State) ->
                 {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}} ->
                     cowboy_req:reply(
                         204,
-                        #{"ra_index" => to_list(Index), "ra_term" => to_list(Term), "ra_leader" => to_list(LeaderRaNodeId)},
+                        #{"ra_index" => to_list(Index),
+                          "ra_term" => to_list(Term),
+                          "ra_leader" => to_list(LeaderRaNodeId)},
                         Req1);
                 timeout ->
                     cowboy_req:reply(503, #{}, "RA timeout", Req1)
@@ -87,5 +89,7 @@ to_list(Val) when is_list(Val)    -> Val;
 to_list(Val) when is_atom(Val)    -> atom_to_list(Val);
 to_list(Val) when is_binary(Val)  -> binary_to_list(Val);
 to_list(Val) when is_integer(Val) -> integer_to_list(Val);
-to_list(Val) -> lists:flatten(io_lib:format("~p", [Val])).
+to_list({Leader, _}) when is_atom(Leader) ->
+    atom_to_list(Leader);
+to_list(Val) -> lists:flatten(io_lib:format("~w", [Val])).
 
