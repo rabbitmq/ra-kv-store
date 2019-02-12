@@ -1,5 +1,7 @@
 # Raft-based Key/Value Store
 
+[![Travis CI](https://travis-ci.org/rabbitmq/ra-kv-store.svg?branch=master)](https://travis-ci.org/rabbitmq/ra-kv-store)
+
 This is a tiny key/value store based on [Ra](https://github.com/rabbitmq/ra) developed
 to be used in certain integration tests. It is not meant to be a general purpose project.
 

@@ -6,6 +6,7 @@ language: minimal
 notifications:
   email:
     - acogoluegnes@pivotal.io
+    - knilsson@pivotal.io
 addons:
   apt:
     sources:
