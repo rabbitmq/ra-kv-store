@@ -23,7 +23,8 @@
          cas/4]).
 
 write(ServerReference, Key, Value) ->
-    case ra:process_command(ServerReference, {write, Key, Value}) of
+    Cmd = {write, Key, Value},
+    case ra:process_command(ServerReference, Cmd) of
         {ok, {Index, Term}, LeaderRaNodeId} ->
             {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
@@ -37,9 +38,13 @@ read(ServerReference, Key) ->
     Value.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
-    case ra:process_command(ServerReference, {cas, Key, ExpectedValue, NewValue}) of
+    Cmd = {cas, Key, ExpectedValue, NewValue},
+    case ra:process_command(ServerReference, Cmd) of
         {ok, {{read, ReadValue}, {index, Index}, {term, Term}}, LeaderRaNodeId} ->
-            {ok, {{read, ReadValue}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
+            {ok, {{read, ReadValue},
+                  {index, Index},
+                  {term, Term},
+                  {leader, LeaderRaNodeId}}};
         {timeout, _} -> timeout
     end.
 
@@ -54,11 +59,11 @@ apply(#{index := Index,
 apply(#{index := Index, term := Term} = _Metadata,
       {cas, Key, ExpectedValue, NewValue}, State) ->
     {NewState, ReadValue} = case maps:get(Key, State, undefined) of
-        ExpectedValue ->
-            {maps:put(Key, NewValue, State), ExpectedValue};
-        ValueInStore ->
-            {State, ValueInStore}
-    end,
+                                ExpectedValue ->
+                                    {maps:put(Key, NewValue, State), ExpectedValue};
+                                ValueInStore ->
+                                    {State, ValueInStore}
+                            end,
     SideEffects = side_effects(Index, NewState),
     {NewState, {{read, ReadValue}, {index, Index}, {term, Term}}, SideEffects}.
 

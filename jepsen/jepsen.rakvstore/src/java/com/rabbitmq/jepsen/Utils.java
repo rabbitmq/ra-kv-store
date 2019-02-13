@@ -298,6 +298,7 @@ public class Utils {
                     if (conn != null) {
                         conn.disconnect();
                     }
+                    LOG.dump();
                 }
             });
         }

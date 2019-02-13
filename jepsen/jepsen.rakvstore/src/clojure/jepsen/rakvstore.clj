@@ -58,9 +58,10 @@
                                  :write (do (com.rabbitmq.jepsen.Utils/write conn k v)
                                             (assoc op :type, :ok))
                                  :cas (let [[old new] v]
-                                           (assoc op :type (if (com.rabbitmq.jepsen.Utils/cas conn k old new)
-                                                             :ok
-                                                             :fail)))
+                                        (assoc op :type (let [result (com.rabbitmq.jepsen.Utils/cas conn k old new)]
+                                                          (if (.isOk result)
+                                                            :ok
+                                                            :fail))))
                                  )
                            (catch com.rabbitmq.jepsen.RaTimeoutException _
                              (assoc op
@@ -101,6 +102,7 @@
                      (c/su
                        (c/exec :rm :-rf "/tmp/ra_kv_store")
                        (c/exec :rm :-rf dir)
+                       (c/exec :mkdir :-p log-dir)
                        (let [url releasefile]
                             (cu/install-archive! url dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
@@ -109,7 +111,7 @@
                        (let [vmArgs (com.rabbitmq.jepsen.Utils/vmArgs)]
                             (c/exec :echo vmArgs :| :tee vmArgsFile)
                             )
-                       (c/exec :mkdir log-dir)
+                       (info node "starting RA server" binary)
                        (c/exec* env-variables binary "start")
                        (Thread/sleep 2000)
                        )
@@ -117,6 +119,7 @@
              (teardown! [_ test node]
                         (info node "tearing down RA KV Store")
                         (c/su
+                          (c/exec :mkdir :-p log-dir)
                           (if (not= "" (try
                                          (c/exec :pgrep :beam)
                                          (catch RuntimeException _ "")))

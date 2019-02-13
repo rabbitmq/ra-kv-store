@@ -19,9 +19,28 @@
 -export([start/2, connect_nodes/1, connect_node/1]).
 -export([stop/1]).
 
+
+wait_for_nodes([]) ->
+    error_logger:info_msg("All erlang nodes connected~n", []),
+    ok;
+wait_for_nodes([Node | Rem] = AllNodes) ->
+    case net_kernel:connect_node(Node) of
+        true ->
+            %% we're connected, great
+            wait_for_nodes(Rem);
+        false ->
+            error_logger:info_msg("Could not connect ~w. Sleeping...~n", [Node]),
+            %% we could not connect, sleep a bit and recurse
+            timer:sleep(1000),
+            wait_for_nodes(AllNodes)
+    end.
+
+
 start(_Type, _Args) ->
-    {ok, Nodes} = application:get_env(ra_kv_store, nodes),
+    {ok, Servers} = application:get_env(ra_kv_store, nodes),
+    Nodes = [N || {_, N} <- Servers],
     {ok, ServerReference} = application:get_env(ra_kv_store, server_reference),
+    logger:set_primary_config(level, all),
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
     Machine = {module, ra_kv_store, Config},
@@ -33,8 +52,26 @@ start(_Type, _Args) ->
             error_logger:info_msg("Restarting RA node ~p~n", [Node]),
             ok = ra:restart_server(Node);
         {ok, false} ->
-            error_logger:info_msg("Starting RA cluster"),
-            {ok, _, _} = ra:start_cluster(ClusterId, Machine, Nodes),
+            [N | _] = lists:usort(Nodes),
+            case N == node() of
+                true ->
+                    %% wait for all nodes to come online
+                    ok = wait_for_nodes(Nodes),
+                    %% only the smallest node declares a cluster
+                    timer:sleep(2000),
+                    {ok, Started, Failed} = ra:start_cluster(ClusterId, Machine, Servers),
+                    case length(Started) == length(Servers) of
+                        true ->
+                            %% all started
+                            ok;
+                        false ->
+                            error_logger:info_msg("RA cluster failures  ~w",
+                                                  [Failed]),
+                            ok
+                    end;
+                false ->
+                    ok
+            end,
             ok
     end,
 
@@ -42,7 +79,7 @@ start(_Type, _Args) ->
     {ok, ReconnectInterval} = application:get_env(ra_kv_store, node_reconnection_interval),
     {ok, _ } = timer:apply_interval(
         ReconnectInterval,
-        ?MODULE, connect_nodes, [Nodes]),
+        ?MODULE, connect_nodes, [Servers]),
 
     Dispatch = cowboy_router:compile([
         {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ServerReference}]}]}

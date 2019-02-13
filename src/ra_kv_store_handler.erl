@@ -63,10 +63,15 @@ init(Req0=#{method := <<"PUT">>}, State) ->
             end;
         Expected ->
             case ra_kv_store:cas(ServerReference, Key, Expected, Value) of
-                {ok, {{read, Expected}, {index, Index}, {term, Term}, {leader, LeaderRaNodeId}}} ->
+                {ok, {{read, Expected},
+                      {index, Index},
+                      {term, Term},
+                      {leader, LeaderRaNodeId}}} ->
                     cowboy_req:reply(
                         204,
-                        #{"ra_index" => to_list(Index), "ra_term" => to_list(Term), "ra_leader" => to_list(LeaderRaNodeId)},
+                        #{"ra_index" => to_list(Index),
+                          "ra_term" => to_list(Term),
+                          "ra_leader" => to_list(LeaderRaNodeId)},
                         Req1);
                 timeout ->
                     cowboy_req:reply(503, #{}, "RA timeout", Req1);

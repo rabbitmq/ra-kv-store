@@ -16,7 +16,7 @@ endef
 
 dep_ra = git https://github.com/rabbitmq/ra.git master
 DEPS = ra cowboy
-dep_cowboy_commit = 2.4.0
+dep_cowboy_commit = 2.6.1
 
 DEP_PLUGINS = cowboy
 
