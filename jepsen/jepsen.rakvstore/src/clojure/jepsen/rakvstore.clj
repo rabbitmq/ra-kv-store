@@ -100,8 +100,7 @@
                        (c/exec :rm :-rf "/tmp/ra_kv_store")
                        (c/exec :rm :-rf dir)
                        (c/exec :mkdir :-p log-dir)
-                       (let [url releasefile]
-                            (cu/install-archive! (str (test :erlang-distribution-url)) dir))
+                       (cu/install-archive! (str (test :erlang-distribution-url)) dir)
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
                             (c/exec :echo configuration :| :tee configurationFile)
                             )
