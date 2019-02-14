@@ -104,13 +104,14 @@
                        (c/exec :rm :-rf dir)
                        (c/exec :mkdir :-p log-dir)
                        (let [url releasefile]
-                            (cu/install-archive! url dir))
+                            (cu/install-archive! (test :erlang-distribution-url) dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
                             (c/exec :echo configuration :| :tee configurationFile)
                             )
                        (let [vmArgs (com.rabbitmq.jepsen.Utils/vmArgs)]
                             (c/exec :echo vmArgs :| :tee vmArgsFile)
                             )
+                       (c/exec* "chmod u+x /opt/rakvstore/erts*/bin/*")
                        (info node "starting RA server" binary)
                        (c/exec* env-variables binary "start")
                        (Thread/sleep 2000)
@@ -378,7 +379,12 @@
     :default  134217728
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
+   [nil "--erlang-distribution-url URL" "URL to retrieve the Erlang distribution archive"
+    :default "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz"
+    :parse-fn read-string]
    ])
+
+
 
 (defn rakvstore-test
       "Given an options map from the command line runner (e.g. :nodes, :ssh,
