@@ -82,9 +82,6 @@
 
            (close! [_ test]))
 
-
-(def releasefile "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz")
-;(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
 (def dir "/opt/rakvstore")
 (def log-dir "/opt/rakvstore/log")
 (def status-file "/opt/rakvstore/log/status.dump")
@@ -104,7 +101,7 @@
                        (c/exec :rm :-rf dir)
                        (c/exec :mkdir :-p log-dir)
                        (let [url releasefile]
-                            (cu/install-archive! (test :erlang-distribution-url) dir))
+                            (cu/install-archive! (str (test :erlang-distribution-url)) dir))
                        (let [configuration (com.rabbitmq.jepsen.Utils/configuration test node)]
                             (c/exec :echo configuration :| :tee configurationFile)
                             )
