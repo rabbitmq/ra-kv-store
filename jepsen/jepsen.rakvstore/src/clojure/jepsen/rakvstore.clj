@@ -152,7 +152,7 @@
       {:client    (Client. nil)
        :checker   (independent/checker
                     (checker/compose
-                      {:linear   (checker/linearizable)
+                      {:linear   (checker/linearizable {:model (model/cas-register)})
                        :timeline (timeline/html)}))
        :generator (independent/concurrent-generator
                     10
@@ -403,7 +403,6 @@
              {:name (str (name (:workload opts)))
               :os   debian/os
               :db   (db)
-              :model (model/cas-register)
               :checker    (checker/compose
                             {:perf     (checker/perf)
                              :workload (:checker workload)})
