@@ -194,7 +194,7 @@
             ; FIXME looks like the ra_log_segment_writer isn't killed (doesn't show up in the logs)
             ;erlangProcess (rand-nth (list "ra_log_wal" "ra_log_snapshot_writer" "ra_log_segment_writer"))
             erlangProcess (rand-nth (list "ra_log_wal" "ra_log_segment_writer"))
-            erlangEval (str "eval 'exit(whereis(" erlangProcess "), killed_by_jepsen).'")
+            erlangEval (str "eval 'exit(whereis(" erlangProcess "), kill).'")
             ]
            (c/su
              (info node "Killing" erlangProcess "Erlang process")
