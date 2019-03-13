@@ -110,7 +110,7 @@
                        (c/exec* "chmod u+x /opt/rakvstore/erts*/bin/*")
                        (info node "starting RA server" binary)
                        (c/exec* env-variables binary "start")
-                       (Thread/sleep 2000)
+                       (Thread/sleep 5000)
                        )
                      )
              (teardown! [_ test node]
