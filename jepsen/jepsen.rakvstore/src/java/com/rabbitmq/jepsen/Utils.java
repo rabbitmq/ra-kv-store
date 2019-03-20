@@ -219,7 +219,7 @@ public class Utils {
 
         String get(Object key) throws Exception {
             return request(() -> {
-                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                URL url = new URL(String.format("https://%s:8080/%s", this.node, key.toString()));
                 HttpURLConnection conn = null;
                 try {
                     conn = (HttpURLConnection) url.openConnection();
@@ -239,7 +239,7 @@ public class Utils {
 
         Response write(Object key, Object value) throws Exception {
             return request(() -> {
-                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                URL url = new URL(String.format("https://%s:8080/%s", this.node, key.toString()));
                 HttpURLConnection conn = null;
                 Response response = null;
                 try {
@@ -271,7 +271,7 @@ public class Utils {
         Response cas(Object key, Object oldValue, Object newValue) throws Exception {
             return request(() -> {
                 CasRequest request = LOG.casRequest(node, oldValue, newValue);
-                URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+                URL url = new URL(String.format("https://%s:8080/%s", this.node, key.toString()));
                 HttpURLConnection conn = null;
                 try {
                     conn = (HttpURLConnection) url.openConnection();

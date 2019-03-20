@@ -28,7 +28,7 @@
                       :libglib2.0-dev])
      (info "Building thrift (this takes several minutes)")
      (let [thrift-dir "/opt/thrift"]
-       (cu/install-archive! "http://www-eu.apache.org/dist/thrift/0.10.0/thrift-0.10.0.tar.gz" thrift-dir)
+       (cu/install-archive! "https://www-eu.apache.org/dist/thrift/0.10.0/thrift-0.10.0.tar.gz" thrift-dir)
        (c/cd thrift-dir
              ;; charybdefs needs this in /usr/bin
              (c/exec "./configure" "--prefix=/usr")

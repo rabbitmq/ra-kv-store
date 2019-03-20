@@ -124,7 +124,7 @@
   (c/su
     (add-repo!
       "webupd8"
-      "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main"
+      "deb http://ppa.launchpad.net/webupd8team/java/ubuntu/ trusty main"
       "hkp://keyserver.ubuntu.com:80"
       "EEA14886")
     (c/exec :echo "debconf shared/accepted-oracle-license-v1-1 select true" |
