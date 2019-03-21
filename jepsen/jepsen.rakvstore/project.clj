@@ -6,7 +6,7 @@
   :javac-options     ["-target" "1.8" "-source" "1.8"]
   :jvm-opts ["-Xmx3g"]
   :license {:name "Apache 2.0 License"
-            :url "http://www.apache.org/licenses/LICENSE-2.0.html"}
+            :url "https://www.apache.org/licenses/LICENSE-2.0.html"}
   :main jepsen.rakvstore
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [jepsen "0.1.12"]])

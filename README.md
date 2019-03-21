@@ -73,6 +73,6 @@ See the [readme](jepsen/jepsen.rakvstore/README.md).
 
 # License
 
-RA KV Store is [Apache 2.0 licensed](http://www.apache.org/licenses/LICENSE-2.0.html).
+RA KV Store is [Apache 2.0 licensed](https://www.apache.org/licenses/LICENSE-2.0.html).
 
 _Sponsored by [Pivotal](http://pivotal.io)_
