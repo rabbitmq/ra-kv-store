@@ -31,7 +31,7 @@ write(ServerReference, Key, Value) ->
     end.
 
 read(ServerReference, Key) ->
-    {ok, Value, _} = ra:consistent_query(ServerReference,
+    {ok, Value, _} = ra:read_only_query(ServerReference,
                                          fun(State) ->
                                                  maps:get(Key, State, undefined)
                                          end),

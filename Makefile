@@ -14,7 +14,7 @@ define PROJECT_ENV
 ]
 endef
 
-dep_ra = git https://github.com/rabbitmq/ra.git master
+dep_ra = git https://github.com/rabbitmq/ra.git read-only-query
 DEPS = ra cowboy
 dep_cowboy_commit = 2.6.1
 
