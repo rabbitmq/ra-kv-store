@@ -27,8 +27,7 @@ clean-deps:
 	rm -rf deps
 
 rel-docker: clean-rel clean-deps
-	docker build --tag jepsen-erlang .
-	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp jepsen-erlang make rel
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp erlang:21.3.1 make rel
 
 rel-jepsen: rel-docker
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/

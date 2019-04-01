@@ -1,3 +1,9 @@
+*This is a modified version of
+https://github.com/jepsen-io/jepsen/tree/master/docker. Only change:
+update `docker-compose.dev.yml` to share the `${JEPSEN_ROOT}:/jepsen`
+directory with all the `jepsen-n*` docker containers, not only the `jepsen-control`
+one.*
+
 Dockerized Jepsen
 =================
 

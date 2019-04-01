@@ -7,39 +7,11 @@ This work is based on [Jepsen tutorial](https://github.com/jepsen-io/jepsen/blob
 You must be in the project **root directory** to build the Erlang release. The Erlang
 release needs to be built on Linux-based system, as this is where it executes in Jepsen tests.
 
-### Package locally if you run Linux
-
-```
-ra-kv-store $ make rel-jepsen-local
-...
-cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
-```
-
-### Package with Docker if you run macOS
+The easiest is to use a one-time Docker container to compile the release
+with the appropriate configuration:
 
 ```
 ra-kv-store $ make rel-jepsen
-...
-cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
-```
-
-Right now the Docker packaging uses Erlang 19. Use the Vagrant packaging to use
-a more recent version of Erlang.
-
-### Package with Vagrant if you run macOS
-
-```
-ra-kv-store $ vagrant up
-ra-kv-store $ vagrant ssh
-```
-
-Then inside the VM:
-
-```
-~ $ cd /vagrant/
-vagrant $ make rel-jepsen-local
-...
-cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 ```
 
 ## Running Jepsen tests with Docker
@@ -129,51 +101,6 @@ The `combined` nemesis creates a network partition and randomly kills the Erlang
 processes on random nodes (`--random-nodes` option) during the partition. The network partition
 strategy can be chosen with the `--network-partition-nemesis` option when using the `combined` nemesis,
 the default being `random-partition-halves`.
-
-## Running Jepsen tests with Vagrant (outdated)
-
-In the **root directory**, package the Erlang application and copy it in the Jepsen test directory:
-
-```
-ra-kv-store $ make rel-jepsen
-...
-cp _rel/ra_kv_store_release/*.tar.gz /jepsen/jepsen.rakvstore/
-```
-
-`cd` into the `jepsen/jepsen.rakvstore` directory:
-```
-ra-kv-store $ cd jepsen/jepsen.rakvstore
-```
-
-We are going to use 3 virtual machines created by Vagrant. You need to reference those
-VMs in your `/etc/hosts` file (be careful to use tabs between the IP and the hostname):
-
-```
-192.168.33.10   n1
-192.168.33.11   n2
-192.168.33.12   n3
-```
-
-Start up the VMs (this may take a few minutes, especially the first time):
-
-```
-jepsen.rakvstore $ vagrant up
-```
-
-Make sure the appropriate release file will be used by updating the `src/clojure/jepsen/rakvstore.clj` file:
-
-```
-;(def releasefile "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz") // commented out
-(def releasefile "file:///vagrant/ra_kv_store_release-1.tar.gz")
-```
-
-You can now start the Jepsen test:
-
-```
-jepsen.rakvstore $ lein run test --node n1 --node n2 --node n3 \
-  --username vagrant --password vagrant --ssh-private-key $(pwd)/.vagrant/machines/n1/virtualbox/private_key \
-  --test-count 1 --time-limit 15
-```
 
 ## Client
 

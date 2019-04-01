@@ -5,16 +5,16 @@ services:
       - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
   n1:
     volumes:
-      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
   n2:
     volumes:
-      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
   n3:
     volumes:
-      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
   n4:
     volumes:
-      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
   n5:
     volumes:
-      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen
+      - ${JEPSEN_ROOT}:/jepsen # Mounts $JEPSEN_ROOT on host to /jepsen control container
