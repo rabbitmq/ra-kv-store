@@ -81,7 +81,7 @@ http_handler(_Config) ->
 
     LeaderAsList = atom_to_list(Leader),
 
-    "3" = proplists:get_value("ra_index", Headers1),
+    "2" = proplists:get_value("ra_index", Headers1),
     "1" = proplists:get_value("ra_term", Headers1),
     LeaderAsList = proplists:get_value("ra_leader", Headers1),
 
@@ -91,14 +91,14 @@ http_handler(_Config) ->
     {ok, {{_, 204, _}, Headers2, _}} =
         httpc:request(put, {Url, [], [], "value=2&expected=1"}, [], []),
 
-    "5" = proplists:get_value("ra_index", Headers2),
+    "3" = proplists:get_value("ra_index", Headers2),
     "1" = proplists:get_value("ra_term", Headers2),
     LeaderAsList = proplists:get_value("ra_leader", Headers2),
 
     {ok, {{_, 409, _}, Headers3, "2"}} =
         httpc:request(put, {Url, [], [], "value=99&expected=1"}, [], []),
 
-    "6" = proplists:get_value("ra_index", Headers3),
+    "4" = proplists:get_value("ra_index", Headers3),
     "1" = proplists:get_value("ra_term", Headers3),
     LeaderAsList = proplists:get_value("ra_leader", Headers3),
 
