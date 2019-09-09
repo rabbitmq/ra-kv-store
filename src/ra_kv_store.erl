@@ -31,11 +31,17 @@ write(ServerReference, Key, Value) ->
     end.
 
 read(ServerReference, Key) ->
-    {ok, Value, _} = ra:consistent_query(ServerReference,
+    case ra:consistent_query(ServerReference,
                                          fun(State) ->
                                                  maps:get(Key, State, undefined)
-                                         end),
-    Value.
+                                         end) of
+        {ok, Value, _} ->
+            Value;
+        {timeout, _} ->
+            timeout;
+        {error,nodedown} ->
+            error
+    end.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
     Cmd = {cas, Key, ExpectedValue, NewValue},
