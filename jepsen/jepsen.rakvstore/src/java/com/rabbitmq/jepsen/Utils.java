@@ -46,6 +46,8 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked")
 public class Utils {
 
+    private static final int HTTP_REQUEST_TIMEOUT = 600_000;
+
     // static JepsenTestLog LOG = new DefaultJepsenTestLog();
     static JepsenTestLog LOG = new NoOpJepsenTestLog();
 
@@ -224,6 +226,8 @@ public class Utils {
                 try {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(HTTP_REQUEST_TIMEOUT);
+                    conn.setReadTimeout(HTTP_REQUEST_TIMEOUT);
                     try {
                         return response(conn.getInputStream());
                     } catch (FileNotFoundException e) {
@@ -246,6 +250,8 @@ public class Utils {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("PUT");
                     conn.setDoOutput(true);
+                    conn.setConnectTimeout(HTTP_REQUEST_TIMEOUT);
+                    conn.setReadTimeout(HTTP_REQUEST_TIMEOUT);
                     try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
                         out.write("value=" + value.toString());
                     }
