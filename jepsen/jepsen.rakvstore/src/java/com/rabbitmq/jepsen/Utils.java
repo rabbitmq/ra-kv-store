@@ -283,6 +283,8 @@ public class Utils {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("PUT");
                     conn.setDoOutput(true);
+                    conn.setConnectTimeout(HTTP_REQUEST_TIMEOUT);
+                    conn.setReadTimeout(HTTP_REQUEST_TIMEOUT);
                     try (OutputStreamWriter out = new OutputStreamWriter(conn.getOutputStream())) {
                         out.write(String.format("value=%s&expected=%s", newValue.toString(), oldValue.toString()));
                     }
