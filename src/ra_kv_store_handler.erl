@@ -18,6 +18,8 @@
 
 -export([init/2]).
 
+-define(READ_BODY_OPTIONS, #{length => 640000}).
+
 init(Req0=#{method := <<"GET">>}, State) ->
     ServerReference = proplists:get_value(server_reference, State),
 	Key = cowboy_req:binding(key, Req0),
@@ -38,7 +40,7 @@ init(Req0=#{method := <<"GET">>}, State) ->
 init(Req0=#{method := <<"PUT">>}, State) ->
     ServerReference = proplists:get_value(server_reference, State),
     Key = cowboy_req:binding(key, Req0),
-    {ok, KeyValues, Req1} = cowboy_req:read_urlencoded_body(Req0),
+    {ok, KeyValues, Req1} = cowboy_req:read_urlencoded_body(Req0, ?READ_BODY_OPTIONS),
     Value = case proplists:get_value(<<"value">>, KeyValues) of
         <<"">> -> undefined;
         NotNullValue -> NotNullValue
