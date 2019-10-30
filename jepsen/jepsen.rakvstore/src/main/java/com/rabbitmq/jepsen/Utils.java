@@ -16,6 +16,8 @@
 
 package com.rabbitmq.jepsen;
 
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,6 +49,8 @@ import java.util.stream.Collectors;
 public class Utils {
 
     private static final int HTTP_REQUEST_TIMEOUT = 600_000;
+
+    private static final Logger LOGGER = Logger.getLogger("jepsen.utils.client");
 
     // static JepsenTestLog LOG = new DefaultJepsenTestLog();
     static JepsenTestLog LOG = new NoOpJepsenTestLog();
@@ -203,6 +207,24 @@ public class Utils {
         }
     }
 
+    private static Map<String, String> raHeaders(HttpURLConnection c) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        for (Map.Entry<String, List<String>> entry : c.getHeaderFields().entrySet()) {
+            if (entry.getKey() != null && entry.getKey().startsWith("ra_")) {
+                headers.put(entry.getKey().replaceFirst("ra_", ""), String.join(",", entry.getValue()));
+            }
+        }
+        return headers;
+    }
+
+    private static void logGetResponse(String node, Object key, String value) {
+        try {
+            LOGGER.info("read [" + key + " " + value + "] from " + node);
+        } catch (Exception e) {
+            LOGGER.warn("Error while logging RA headers: " + e.getMessage());
+        }
+    }
+
     public static class Client {
 
         private final String node;
@@ -219,7 +241,7 @@ public class Utils {
             }
         }
 
-        String get(Object key) throws Exception {
+        private String get(Object key, boolean log) throws Exception {
             return request(() -> {
                 URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
                 HttpURLConnection conn = null;
@@ -229,7 +251,11 @@ public class Utils {
                     conn.setConnectTimeout(HTTP_REQUEST_TIMEOUT);
                     conn.setReadTimeout(HTTP_REQUEST_TIMEOUT);
                     try {
-                        return response(conn.getInputStream());
+                        String response = response(conn.getInputStream());
+                        if (log) {
+                            logGetResponse(node, key, response);
+                        }
+                        return response;
                     } catch (FileNotFoundException e) {
                         return null;
                     }
@@ -239,6 +265,10 @@ public class Utils {
                     }
                 }
             });
+        }
+
+        String get(Object key) throws Exception {
+            return get(key, true);
         }
 
         Response write(Object key, Object value) throws Exception {
@@ -311,16 +341,6 @@ public class Utils {
             });
         }
 
-        Map<String, String> raHeaders(HttpURLConnection c) {
-            Map<String, String> headers = new LinkedHashMap<>();
-            for (Map.Entry<String, List<String>> entry : c.getHeaderFields().entrySet()) {
-                if (entry.getKey() != null && entry.getKey().startsWith("ra_")) {
-                    headers.put(entry.getKey().replaceFirst("ra_", ""), String.join(",", entry.getValue()));
-                }
-            }
-            return headers;
-        }
-
         /**
          * Add a value to a set.
          * The uniqueness of the value in the set is enforced
@@ -341,7 +361,7 @@ public class Utils {
                 retry(() -> {
                     LOG.step(requestAttempt, () -> "in retry loop");
                     // currentValue is ""
-                    String currentValue = get(key);
+                    String currentValue = get(key, false);
                     if (currentValue == null || currentValue.isEmpty()) {
                         LOG.step(requestAttempt, () -> "no value in the set");
                         LOG.attempt(requestAttempt);
@@ -433,7 +453,7 @@ public class Utils {
          */
         public String getSet(Object key) throws Exception {
             LOG.dump();
-            return "#{" + get(key) + "}";
+            return "#{" + get(key, false) + "}";
         }
     }
 
