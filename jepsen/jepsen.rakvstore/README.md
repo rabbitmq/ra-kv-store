@@ -104,9 +104,9 @@ the default being `random-partition-halves`.
 
 ## Client
 
-Jepsen tests access the KV through a Java-based client. This client handles HTTP connections, requests,
+Jepsen tests access the KV store through a Java-based client. This client handles HTTP connections, requests,
 and responses, as well appropriate logic for the tests (error handling, value swapping). The client is
-compiled as part as of the Jepsen. The client and its corresponding unit tests can be modified and the
+compiled as part of the Jepsen test. The client and its corresponding unit tests can be modified and the
 changes can be checked by running Maven:
 
 ```
