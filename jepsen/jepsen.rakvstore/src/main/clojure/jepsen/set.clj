@@ -28,7 +28,7 @@
                   (assoc this :conn (com.rabbitmq.jepsen.Utils/createClient node))
            )
            (setup! [this test])
-           ; for some reasons, creating an empty set here makes the RA KV Store
+           ; for some reasons, creating an empty set here makes the RA KV Store fail
            ; (step 8 of the tutorial actually initializes the set here)
            ; solution is to handle a null set in the addToSet function
            (invoke! [_ test op]

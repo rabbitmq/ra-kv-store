@@ -55,14 +55,14 @@
                          (try+
                            (case (:f op)
                                  :read  (assoc op :type :ok, :value (independent/tuple k (parse-long (com.rabbitmq.jepsen.Utils/get conn k))))
-                                 :write (do (com.rabbitmq.jepsen.Utils/write conn k v)
-                                            (assoc op :type, :ok))
+                                 :write (do (let [result (com.rabbitmq.jepsen.Utils/write conn k v)]
+                                            (assoc op :type :ok :error (str (com.rabbitmq.jepsen.Utils/node conn) " " (.getHeaders result)))))
                                  :cas (let [[old new] v]
-                                        (assoc op :type (let [result (com.rabbitmq.jepsen.Utils/cas conn k old new)]
-                                                          (if (.isOk result)
+                                        (do (let [result (com.rabbitmq.jepsen.Utils/cas conn k old new)]
+                                          (assoc op :type (if (.isOk result)
                                                             :ok
-                                                            :fail))))
-                                 )
+                                                            :fail) :error (str (com.rabbitmq.jepsen.Utils/node conn) " " (.getHeaders result)))    
+                                        ))))
                            (catch com.rabbitmq.jepsen.RaTimeoutException _
                              (assoc op
                                     :type  :info
