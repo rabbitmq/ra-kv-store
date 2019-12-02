@@ -4,7 +4,7 @@
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]
   :javac-options     ["-target" "1.8" "-source" "1.8"]
-  :jvm-opts ["-Xmx3g"]
+  :jvm-opts ["-Xmx6g"]
   :license {:name "Apache 2.0 License"
             :url "https://www.apache.org/licenses/LICENSE-2.0.html"}
   :main jepsen.rakvstore
