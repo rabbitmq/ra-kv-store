@@ -3,6 +3,8 @@ PROJECT_DESCRIPTION = Experimental raft-based key/value store
 PROJECT_VERSION = 0.1.0
 PROJECT_MOD = ra_kv_store_app
 
+ERLANG_VERSION ?= 22.2.1
+
 define PROJECT_ENV
 [
 	{port, 8080},
@@ -27,12 +29,26 @@ clean-deps:
 	rm -rf deps
 
 rel-docker: clean-rel clean-deps
-	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp erlang:22.2.1 make rel
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp pivotalrabbitmq/erlang-dev-stretch make rel
 
 rel-jepsen: rel-docker
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 
 rel-jepsen-local: rel
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
+
+
+.PHONY: erlang-docker-image
+erlang-docker-image: ## Build Erlang Docker (for local development)
+	@docker build \
+	  --file Dockerfile-erlang \
+	  --tag pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION) \
+	  --tag pivotalrabbitmq/erlang-dev-stretch:latest \
+	  .
+
+.PHONY: push-erlangerlang-docker-image
+push-erlang-docker-image: erlang-docker-image ## Push Erlang Docker image
+	@docker push pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION)
+	@docker push pivotalrabbitmq/erlang-dev-stretch:latest
 
 include erlang.mk
