@@ -16,7 +16,7 @@ endef
 
 dep_ra = git https://github.com/rabbitmq/ra.git master
 DEPS = ra cowboy
-dep_cowboy_commit = 2.6.3
+dep_cowboy_commit = 2.7.0
 
 DEP_PLUGINS = cowboy
 
@@ -27,7 +27,7 @@ clean-deps:
 	rm -rf deps
 
 rel-docker: clean-rel clean-deps
-	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp erlang:22.0.7 make rel
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp erlang:22.2.1 make rel
 
 rel-jepsen: rel-docker
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
