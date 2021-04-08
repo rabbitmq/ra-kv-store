@@ -59,7 +59,8 @@ start(_Type, _Args) ->
                     ok = wait_for_nodes(Nodes),
                     %% only the smallest node declares a cluster
                     timer:sleep(2000),
-                    {ok, Started, Failed} = ra:start_cluster(ClusterId, Machine, Servers),
+                    ra_system:start_default(),
+                    {ok, Started, Failed} = ra:start_cluster(default, ClusterId, Machine, Servers),
                     case length(Started) == length(Servers) of
                         true ->
                             %% all started

@@ -51,7 +51,8 @@ http_handler(_Config) ->
     Config = #{},
     Machine = {module, ra_kv_store, Config},
     application:ensure_all_started(ra),
-    {ok, _, _} = ra:start_cluster(ClusterId, Machine, Nodes),
+    ra_system:start_default(),
+    {ok, _, _} = ra:start_cluster(default, ClusterId, Machine, Nodes),
     {ok, _, {Leader, _}} = ra:members(hd(Nodes)),
 
     application:ensure_all_started(cowboy),
