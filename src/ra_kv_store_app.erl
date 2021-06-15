@@ -50,7 +50,7 @@ start(_Type, _Args) ->
         {ok, true} ->
             Node = {ServerReference, node()},
             error_logger:info_msg("Restarting RA node ~p~n", [Node]),
-            ok = ra:restart_server(Node);
+            ok = ra:restart_server(default, Node);
         {ok, false} ->
             [N | _] = lists:usort(Nodes),
             case N == node() of
