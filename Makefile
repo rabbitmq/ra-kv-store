@@ -18,7 +18,7 @@ endef
 
 dep_ra = git https://github.com/rabbitmq/ra.git main
 DEPS = ra cowboy
-dep_cowboy_commit = 2.8.0
+dep_cowboy_commit = 2.9.0
 
 DEP_PLUGINS = cowboy
 
