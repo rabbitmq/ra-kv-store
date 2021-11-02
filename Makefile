@@ -3,7 +3,7 @@ PROJECT_DESCRIPTION = Experimental raft-based key/value store
 PROJECT_VERSION = 0.1.0
 PROJECT_MOD = ra_kv_store_app
 
-ERLANG_VERSION ?= 22.3.3
+ERLANG_VERSION_FOR_DOCKER_IMAGE ?= 24.1.3
 
 define PROJECT_ENV
 [
@@ -42,13 +42,13 @@ rel-jepsen-local: rel
 erlang-docker-image: ## Build Erlang Docker (for local development)
 	@docker build \
 	  --file Dockerfile-erlang \
-	  --tag pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION) \
+	  --tag pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION_FOR_DOCKER_IMAGE) \
 	  --tag pivotalrabbitmq/erlang-dev-stretch:latest \
 	  .
 
-.PHONY: push-erlangerlang-docker-image
+.PHONY: push-erlang-docker-image
 push-erlang-docker-image: erlang-docker-image ## Push Erlang Docker image
-	@docker push pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION)
+	@docker push pivotalrabbitmq/erlang-dev-stretch:$(ERLANG_VERSION_FOR_DOCKER_IMAGE)
 	@docker push pivotalrabbitmq/erlang-dev-stretch:latest
 
 include erlang.mk
