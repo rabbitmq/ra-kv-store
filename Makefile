@@ -16,7 +16,7 @@ define PROJECT_ENV
 ]
 endef
 
-dep_ra = git https://github.com/rabbitmq/ra.git master
+dep_ra = git https://github.com/rabbitmq/ra.git main
 DEPS = ra cowboy
 dep_cowboy_commit = 2.8.0
 
