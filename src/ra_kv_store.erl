@@ -16,6 +16,12 @@
 -module(ra_kv_store).
 -behaviour(ra_machine).
 
+-record(state, {
+        store = #{} :: #{term() => term()},
+        index :: term(),
+        term :: term()
+         }).
+
 -export([init/1,
          apply/3,
          write/3,
@@ -32,11 +38,11 @@ write(ServerReference, Key, Value) ->
 
 read(ServerReference, Key) ->
     case ra:consistent_query(ServerReference,
-                                         fun(State) ->
-                                                 maps:get(Key, State, undefined)
+                                         fun(#state{store = Store, index = Index, term = Term}) ->
+                                                 {maps:get(Key, Store, undefined), Index, Term}
                                          end) of
-        {ok, Value, _} ->
-            Value;
+        {ok, {V, Idx, T}, {Leader, _}} ->
+            {{read, V}, {index, Idx}, {term, T}, {leader, Leader}};
         {timeout, _} ->
             timeout;
         {error,nodedown} ->
@@ -54,24 +60,26 @@ cas(ServerReference, Key, ExpectedValue, NewValue) ->
         {timeout, _} -> timeout
     end.
 
-init(_Config) -> #{}.
+init(_Config) -> #state{}.
 
 apply(#{index := Index,
-        term := Term} = _Metadata, {write, Key, Value}, State) ->
-    NewState = maps:put(Key, Value, State),
-    SideEffects = side_effects(Index, NewState),
+        term := Term} = _Metadata, {write, Key, Value}, #state{store = Store0} = State0) ->
+    Store1 = maps:put(Key, Value, Store0),
+    State1 = State0#state{store = Store1, index = Index, term = Term},
+    SideEffects = side_effects(Index, State1),
     %% return the index and term here as a result
-    {NewState, {Index, Term}, SideEffects};
+    {State1, {Index, Term}, SideEffects};
 apply(#{index := Index, term := Term} = _Metadata,
-      {cas, Key, ExpectedValue, NewValue}, State) ->
-    {NewState, ReadValue} = case maps:get(Key, State, undefined) of
+      {cas, Key, ExpectedValue, NewValue}, #state{store = Store0} = State0) ->
+    {Store1, ReadValue} = case maps:get(Key, Store0, undefined) of
                                 ExpectedValue ->
-                                    {maps:put(Key, NewValue, State), ExpectedValue};
+                                    {maps:put(Key, NewValue, Store0), ExpectedValue};
                                 ValueInStore ->
-                                    {State, ValueInStore}
+                                    {Store0, ValueInStore}
                             end,
-    SideEffects = side_effects(Index, NewState),
-    {NewState, {{read, ReadValue}, {index, Index}, {term, Term}}, SideEffects}.
+    State1 = State0#state{store = Store1, index = Index, term = Term},
+    SideEffects = side_effects(Index, State1),
+    {State1, {{read, ReadValue}, {index, Index}, {term, Term}}, SideEffects}.
 
 side_effects(RaftIndex, MachineState) ->
     case application:get_env(ra_kv_store, release_cursor_every) of

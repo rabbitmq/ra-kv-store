@@ -86,8 +86,12 @@ http_handler(_Config) ->
     "1" = proplists:get_value("ra_term", Headers1),
     LeaderAsList = proplists:get_value("ra_leader", Headers1),
 
-    {ok, {{_, 200, _}, _, "1"}} =
+    {ok, {{_, 200, _}, HeadersGet, "1"}} =
         httpc:request(get, {Url, []}, [], []),
+
+    "2" = proplists:get_value("ra_index", HeadersGet),
+    "1" = proplists:get_value("ra_term", HeadersGet),
+    LeaderAsList = proplists:get_value("ra_leader", HeadersGet),
 
     {ok, {{_, 204, _}, Headers2, _}} =
         httpc:request(put, {Url, [], [], "value=2&expected=1"}, [], []),

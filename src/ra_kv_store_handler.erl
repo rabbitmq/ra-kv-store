@@ -22,25 +22,33 @@
 
 init(Req0=#{method := <<"GET">>}, State) ->
     ServerReference = proplists:get_value(server_reference, State),
-	Key = cowboy_req:binding(key, Req0),
+    Key = cowboy_req:binding(key, Req0),
     Value = ra_kv_store:read(ServerReference, Key),
     Req = case Value of
-        timeout ->
-            cowboy_req:reply(503, #{}, "RA timeout", Req0);
-        error ->
-            cowboy_req:reply(503, #{}, "RA error", Req0);
-        undefined ->
-            cowboy_req:reply(404,
-                #{<<"content-type">> => <<"text/plain">>},
-                <<"undefined">>,
-                Req0);
-        Value ->
-            cowboy_req:reply(200,
-                #{<<"content-type">> => <<"text/plain">>},
-                Value,
-                Req0)
-    end,
-	{ok, Req, State};
+              timeout ->
+                  cowboy_req:reply(503, #{}, "RA timeout", Req0);
+              error ->
+                  cowboy_req:reply(503, #{}, "RA error", Req0);
+              {{read, undefined}, {index, Index}, {term, Term}, {leader, Leader}} ->
+                  cowboy_req:reply(404,
+                                   #{"content-type" => <<"text/plain">>,
+                                     "ra_index" => to_list(Index),
+                                     "ra_term" => to_list(Term),
+                                     "ra_leader" => to_list(Leader)
+                                    },
+                                   <<"undefined">>,
+                                   Req0);
+              {{read, Read}, {index, Index}, {term, Term}, {leader, Leader}} ->
+                  cowboy_req:reply(200,
+                                   #{"content-type" => <<"text/plain">>,
+                                     "ra_index" => to_list(Index),
+                                     "ra_term" => to_list(Term),
+                                     "ra_leader" => to_list(Leader)
+                                    },
+                                   Read,
+                                   Req0)
+          end,
+    {ok, Req, State};
 init(Req0=#{method := <<"PUT">>}, State) ->
     ServerReference = proplists:get_value(server_reference, State),
     Key = cowboy_req:binding(key, Req0),

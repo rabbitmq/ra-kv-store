@@ -64,6 +64,6 @@ replay(_Config) ->
     WalFile = filename:join([RaDataDir, node(), "00000001.wal"]),
 
     InitialState = ra_kv_store:init(Config),
-    FinalState = ra_dbg:replay_log(WalFile, ra_kv_store, InitialState),
-    FinalState = #{1 => 4, 2 => 1},
+    {_, Store, _, _} = ra_dbg:replay_log(WalFile, ra_kv_store, InitialState),
+    Store = #{1 => 4, 2 => 1},
     ok.

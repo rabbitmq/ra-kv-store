@@ -54,13 +54,13 @@ kv_store(_Config) ->
     ra_system:start_default(),
     {ok, _, _} = ra:start_cluster(default, ClusterId, Machine, Nodes),
     {ok, _} = ra_kv_store:write(ra_kv1, 1, 2),
-    2 = ra_kv_store:read(ra_kv1, 1),
+    {{read, 2}, _, _, _} = ra_kv_store:read(ra_kv1, 1),
     {ok, {{read, 2}, _, _, _}} = ra_kv_store:cas(ra_kv1, 1, 2, 4),
     {ok, {{read, 4}, _, _, _}} = ra_kv_store:cas(ra_kv1, 1, 3, 6),
-    4 = ra_kv_store:read(ra_kv1, 1),
+    {{read, 4}, _, _, _} = ra_kv_store:read(ra_kv1, 1),
 
     {ok, {{read, undefined}, _, _, _}} = ra_kv_store:cas(ra_kv1, 2, undefined, 1),
-    1 = ra_kv_store:read(ra_kv1, 2),
+    {{read, 1}, _, _, _} = ra_kv_store:read(ra_kv1, 2),
     {ok, {{read, 1}, _, _, _}} = ra_kv_store:cas(ra_kv1, 2, undefined, 3),
-    1 = ra_kv_store:read(ra_kv1, 2),
+    {{read, 1}, _, _, _} = ra_kv_store:read(ra_kv1, 2),
     ok.
