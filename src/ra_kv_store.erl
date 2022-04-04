@@ -14,13 +14,12 @@
 %%
 
 -module(ra_kv_store).
+
 -behaviour(ra_machine).
 
--record(state, {
-        store = #{} :: #{term() => term()},
-        index :: term(),
-        term :: term()
-         }).
+-record(state,
+        {store = #{} :: #{term() => term()}, index :: term(),
+         term :: term()}).
 
 -export([init/1,
          apply/3,
@@ -33,53 +32,70 @@ write(ServerReference, Key, Value) ->
     case ra:process_command(ServerReference, Cmd) of
         {ok, {Index, Term}, LeaderRaNodeId} ->
             {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
-        {timeout, _} -> timeout
+        {timeout, _} ->
+            timeout
     end.
 
 read(ServerReference, Key) ->
     case ra:consistent_query(ServerReference,
-                                         fun(#state{store = Store, index = Index, term = Term}) ->
-                                                 {maps:get(Key, Store, undefined), Index, Term}
-                                         end) of
+                             fun(#state{store = Store,
+                                        index = Index,
+                                        term = Term}) ->
+                                {maps:get(Key, Store, undefined), Index, Term}
+                             end)
+    of
         {ok, {V, Idx, T}, {Leader, _}} ->
             {{read, V}, {index, Idx}, {term, T}, {leader, Leader}};
         {timeout, _} ->
             timeout;
-        {error,nodedown} ->
+        {error, nodedown} ->
             error
     end.
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
     Cmd = {cas, Key, ExpectedValue, NewValue},
     case ra:process_command(ServerReference, Cmd) of
-        {ok, {{read, ReadValue}, {index, Index}, {term, Term}}, LeaderRaNodeId} ->
-            {ok, {{read, ReadValue},
-                  {index, Index},
-                  {term, Term},
-                  {leader, LeaderRaNodeId}}};
-        {timeout, _} -> timeout
+        {ok, {{read, ReadValue}, {index, Index}, {term, Term}},
+         LeaderRaNodeId} ->
+            {ok,
+             {{read, ReadValue},
+              {index, Index},
+              {term, Term},
+              {leader, LeaderRaNodeId}}};
+        {timeout, _} ->
+            timeout
     end.
 
-init(_Config) -> #state{}.
+init(_Config) ->
+    #state{}.
 
-apply(#{index := Index,
-        term := Term} = _Metadata, {write, Key, Value}, #state{store = Store0} = State0) ->
+apply(#{index := Index, term := Term} = _Metadata,
+      {write, Key, Value}, #state{store = Store0} = State0) ->
     Store1 = maps:put(Key, Value, Store0),
-    State1 = State0#state{store = Store1, index = Index, term = Term},
+    State1 =
+        State0#state{store = Store1,
+                     index = Index,
+                     term = Term},
     SideEffects = side_effects(Index, State1),
     %% return the index and term here as a result
     {State1, {Index, Term}, SideEffects};
 apply(#{index := Index, term := Term} = _Metadata,
-      {cas, Key, ExpectedValue, NewValue}, #state{store = Store0} = State0) ->
-    {Store1, ReadValue} = case maps:get(Key, Store0, undefined) of
-                                ExpectedValue ->
-                                    {maps:put(Key, NewValue, Store0), ExpectedValue};
-                                ValueInStore ->
-                                    {Store0, ValueInStore}
-                            end,
-    State1 = State0#state{store = Store1, index = Index, term = Term},
+      {cas, Key, ExpectedValue, NewValue},
+      #state{store = Store0} = State0) ->
+    {Store1, ReadValue} =
+        case maps:get(Key, Store0, undefined) of
+            ExpectedValue ->
+                {maps:put(Key, NewValue, Store0), ExpectedValue};
+            ValueInStore ->
+                {Store0, ValueInStore}
+        end,
+    State1 =
+        State0#state{store = Store1,
+                     index = Index,
+                     term = Term},
     SideEffects = side_effects(Index, State1),
-    {State1, {{read, ReadValue}, {index, Index}, {term, Term}}, SideEffects}.
+    {State1, {{read, ReadValue}, {index, Index}, {term, Term}},
+     SideEffects}.
 
 side_effects(RaftIndex, MachineState) ->
     case application:get_env(ra_kv_store, release_cursor_every) of
@@ -103,4 +119,3 @@ release_cursor(Index, Every) ->
         _ ->
             do_not_release_cursor
     end.
-

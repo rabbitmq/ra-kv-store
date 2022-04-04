@@ -20,11 +20,10 @@
 -compile(export_all).
 
 all() ->
-    [
-        http_handler
-    ].
+    [http_handler].
 
-group() -> [].
+group() ->
+    [].
 
 %% -------------------------------------------------------------------
 %% Testsuite setup/teardown.
@@ -34,7 +33,8 @@ init_per_suite(Config) ->
     application:load(ra),
     logger:set_primary_config(level, all),
     WorkDirectory = proplists:get_value(priv_dir, Config),
-    ok = application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
+    ok =
+        application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
     Config.
 
 end_per_suite(Config) ->
@@ -57,25 +57,24 @@ http_handler(_Config) ->
 
     application:ensure_all_started(cowboy),
 
-    Dispatch = cowboy_router:compile([
-        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, Leader}]}]}
-    ]),
+    Dispatch =
+        cowboy_router:compile([{'_',
+                                [{"/:key", ra_kv_store_handler,
+                                  [{server_reference, Leader}]}]}]),
 
     {ok, Socket} = gen_tcp:listen(0, []),
     {ok, Port} = inet:port(Socket),
     gen_tcp:close(Socket),
 
-    {ok, _} = cowboy:start_clear(kv_store_http_listener,
-        [{port, Port}],
-        #{env => #{dispatch => Dispatch}}
-    ),
+    {ok, _} =
+        cowboy:start_clear(kv_store_http_listener, [{port, Port}],
+                           #{env => #{dispatch => Dispatch}}),
 
     ok = inets:start(),
 
     Url = io_lib:format("http://localhost:~p/~p", [Port, 1]),
 
-    {ok, {{_, 404, _}, _, _}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 404, _}, _, _}} = httpc:request(get, {Url, []}, [], []),
 
     {ok, {{_, 204, _}, Headers1, _}} =
         httpc:request(put, {Url, [], [], "value=1"}, [], []),
@@ -114,22 +113,18 @@ http_handler(_Config) ->
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=&expected=3"}, [], []),
 
-    {ok, {{_, 404, _}, _, _}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 404, _}, _, _}} = httpc:request(get, {Url, []}, [], []),
 
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=1&expected="}, [], []),
 
-    {ok, {{_, 200, _}, _, "1"}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 200, _}, _, "1"}} = httpc:request(get, {Url, []}, [], []),
 
     %% ensure expected value in CAS can be empty
-
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value="}, [], []),
 
-    {ok, {{_, 404, _}, _, _}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 404, _}, _, _}} = httpc:request(get, {Url, []}, [], []),
 
     {ok, {{_, 409, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=1&expected=2"}, [], []),
@@ -137,13 +132,11 @@ http_handler(_Config) ->
     {ok, {{_, 204, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=1&expected="}, [], []),
 
-    {ok, {{_, 200, _}, _, "1"}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 200, _}, _, "1"}} = httpc:request(get, {Url, []}, [], []),
 
     {ok, {{_, 409, _}, _, _}} =
         httpc:request(put, {Url, [], [], "value=2&expected="}, [], []),
 
-    {ok, {{_, 200, _}, _, "1"}} =
-        httpc:request(get, {Url, []}, [], []),
+    {ok, {{_, 200, _}, _, "1"}} = httpc:request(get, {Url, []}, [], []),
 
     ok.

@@ -20,11 +20,10 @@
 -compile(export_all).
 
 all() ->
-    [
-      kv_store
-    ].
+    [kv_store].
 
-group() -> [].
+group() ->
+    [].
 
 %% -------------------------------------------------------------------
 %% Testsuite setup/teardown.
@@ -33,7 +32,8 @@ group() -> [].
 init_per_suite(Config) ->
     application:load(ra),
     WorkDirectory = proplists:get_value(priv_dir, Config),
-    ok = application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
+    ok =
+        application:set_env(ra, data_dir, filename:join(WorkDirectory, "ra")),
     ok = application:set_env(ra_kv_store, release_cursor_every, 1),
     Config.
 
@@ -59,7 +59,8 @@ kv_store(_Config) ->
     {ok, {{read, 4}, _, _, _}} = ra_kv_store:cas(ra_kv1, 1, 3, 6),
     {{read, 4}, _, _, _} = ra_kv_store:read(ra_kv1, 1),
 
-    {ok, {{read, undefined}, _, _, _}} = ra_kv_store:cas(ra_kv1, 2, undefined, 1),
+    {ok, {{read, undefined}, _, _, _}} =
+        ra_kv_store:cas(ra_kv1, 2, undefined, 1),
     {{read, 1}, _, _, _} = ra_kv_store:read(ra_kv1, 2),
     {ok, {{read, 1}, _, _, _}} = ra_kv_store:cas(ra_kv1, 2, undefined, 3),
     {{read, 1}, _, _, _} = ra_kv_store:read(ra_kv1, 2),

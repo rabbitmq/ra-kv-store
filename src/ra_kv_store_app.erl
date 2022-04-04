@@ -14,11 +14,13 @@
 %%
 
 -module(ra_kv_store_app).
+
 -behaviour(application).
 
--export([start/2, connect_nodes/1, connect_node/1]).
+-export([start/2,
+         connect_nodes/1,
+         connect_node/1]).
 -export([stop/1]).
-
 
 wait_for_nodes([]) ->
     error_logger:info_msg("All erlang nodes connected~n", []),
@@ -29,17 +31,18 @@ wait_for_nodes([Node | Rem] = AllNodes) ->
             %% we're connected, great
             wait_for_nodes(Rem);
         false ->
-            error_logger:info_msg("Could not connect ~w. Sleeping...~n", [Node]),
+            error_logger:info_msg("Could not connect ~w. Sleeping...~n",
+                                  [Node]),
             %% we could not connect, sleep a bit and recurse
             timer:sleep(1000),
             wait_for_nodes(AllNodes)
     end.
 
-
 start(_Type, _Args) ->
     {ok, Servers} = application:get_env(ra_kv_store, nodes),
     Nodes = [N || {_, N} <- Servers],
-    {ok, ServerReference} = application:get_env(ra_kv_store, server_reference),
+    {ok, ServerReference} =
+        application:get_env(ra_kv_store, server_reference),
     logger:set_primary_config(level, all),
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
@@ -60,7 +63,8 @@ start(_Type, _Args) ->
                     %% only the smallest node declares a cluster
                     timer:sleep(2000),
                     ra_system:start_default(),
-                    {ok, Started, Failed} = ra:start_cluster(default, ClusterId, Machine, Servers),
+                    {ok, Started, Failed} =
+                        ra:start_cluster(default, ClusterId, Machine, Servers),
                     case length(Started) == length(Servers) of
                         true ->
                             %% all started
@@ -77,21 +81,24 @@ start(_Type, _Args) ->
     end,
 
     % to make sure nodes are always connected
-    {ok, ReconnectInterval} = application:get_env(ra_kv_store, node_reconnection_interval),
-    {ok, _ } = timer:apply_interval(
-        ReconnectInterval,
-        ?MODULE, connect_nodes, [Servers]),
+    {ok, ReconnectInterval} =
+        application:get_env(ra_kv_store, node_reconnection_interval),
+    {ok, _} =
+        timer:apply_interval(ReconnectInterval,
+                             ?MODULE,
+                             connect_nodes,
+                             [Servers]),
 
-    Dispatch = cowboy_router:compile([
-        {'_', [{"/:key", ra_kv_store_handler, [{server_reference, ServerReference}]}]}
-    ]),
+    Dispatch =
+        cowboy_router:compile([{'_',
+                                [{"/:key", ra_kv_store_handler,
+                                  [{server_reference, ServerReference}]}]}]),
 
     {ok, Port} = application:get_env(ra_kv_store, port),
 
-    {ok, _} = cowboy:start_clear(kv_store_http_listener,
-        [{port, Port}],
-        #{env => #{dispatch => Dispatch}}
-    ),
+    {ok, _} =
+        cowboy:start_clear(kv_store_http_listener, [{port, Port}],
+                           #{env => #{dispatch => Dispatch}}),
     ra_kv_store_sup:start_link().
 
 stop(_State) ->
