@@ -34,3 +34,6 @@ _rel/
 
 .vagrant
 *.tar.gz
+
+.lsp/*
+.clj-kondo/*
