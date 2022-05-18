@@ -2,10 +2,10 @@
   :description "Call Me Maybe: Network Partitions in Practice"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.3"]
                  [org.clojure/data.fressian "0.2.1"]
-                 [org.clojure/tools.logging "0.3.1"]
-                 [spootnik/unilog "0.7.13"]
+                 [org.clojure/tools.logging "1.2.4"]
+                 [spootnik/unilog "0.7.29"]
                  [org.clojure/tools.cli "0.3.5"]
                  [clj-time "0.11.0"]
                  [jepsen.txn "0.1.0"]
