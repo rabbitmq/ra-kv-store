@@ -39,7 +39,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 /** */
 @SuppressWarnings("unchecked")
@@ -47,7 +49,7 @@ public class Utils {
 
   private static final int HTTP_REQUEST_TIMEOUT = 600_000;
 
-  private static final Logger LOGGER = Logger.getLogger("jepsen.utils.client");
+  private static final Logger LOGGER = LogManager.getLogger("jepsen.utils.client");
 
   // static JepsenTestLog LOG = new DefaultJepsenTestLog();
   static JepsenTestLog LOG = new NoOpJepsenTestLog();
