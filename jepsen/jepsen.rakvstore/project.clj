@@ -9,4 +9,8 @@
             :url "https://www.apache.org/licenses/LICENSE-2.0.html"}
   :main jepsen.rakvstore
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [jepsen "0.1.19"]])
+                 [jepsen "0.1.19"]]
+  :exclusions [org.slf4j/log4j-over-slf4j
+               log4j/log4j]
+
+)
