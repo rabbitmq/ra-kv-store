@@ -107,7 +107,7 @@
                        (let [vmArgs (com.rabbitmq.jepsen.Utils/vmArgs)]
                             (c/exec :echo vmArgs :| :tee vmArgsFile)
                             )
-                       (c/exec* "chmod u+x /opt/rakvstore/erts*/bin/*")
+                       (c/exec* "chmod u+x /opt/rakvstore/bin/*")
                        (info node "starting RA server" binary)
                        (c/exec* env-variables binary "start")
                        (Thread/sleep 5000)
