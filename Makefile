@@ -21,6 +21,7 @@ DEPS = ra cowboy
 dep_cowboy_commit = 2.9.0
 
 DEP_PLUGINS = cowboy
+BUILD_DEPS = relx
 
 clean-rel:
 	rm -rf _rel
