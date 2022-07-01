@@ -30,7 +30,7 @@ clean-deps:
 	rm -rf deps
 
 rel-docker: clean-rel clean-deps
-	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp pivotalrabbitmq/erlang-dev-stretch make rel
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/ra_kv_store -w /usr/src/ra_kv_store pivotalrabbitmq/erlang-dev-stretch make rel
 
 rel-jepsen: rel-docker
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
