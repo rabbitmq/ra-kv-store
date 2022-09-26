@@ -23,7 +23,7 @@
 -export([stop/1]).
 
 wait_for_nodes([]) ->
-    error_logger:info_msg("All erlang nodes connected~n", []),
+    logger:info("All erlang nodes connected~n", []),
     ok;
 wait_for_nodes([Node | Rem] = AllNodes) ->
     case net_kernel:connect_node(Node) of
@@ -31,8 +31,7 @@ wait_for_nodes([Node | Rem] = AllNodes) ->
             %% we're connected, great
             wait_for_nodes(Rem);
         false ->
-            error_logger:info_msg("Could not connect ~w. Sleeping...~n",
-                                  [Node]),
+            logger:info("Could not connect ~w. Sleeping...~n", [Node]),
             %% we could not connect, sleep a bit and recurse
             timer:sleep(1000),
             wait_for_nodes(AllNodes)
@@ -44,6 +43,9 @@ start(_Type, _Args) ->
     {ok, ServerReference} =
         application:get_env(ra_kv_store, server_reference),
     logger:set_primary_config(level, all),
+    logger:add_handler_filter(default, ra_domain,
+                              {fun logger_filters:domain/2,
+                               {log, equal, [ra]}}),
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
     Machine = {module, ra_kv_store, Config},
@@ -52,7 +54,7 @@ start(_Type, _Args) ->
     case application:get_env(ra_kv_store, restart_ra_cluster) of
         {ok, true} ->
             Node = {ServerReference, node()},
-            error_logger:info_msg("Restarting RA node ~p~n", [Node]),
+            logger:info("Restarting RA node ~p~n", [Node]),
             ok = ra:restart_server(default, Node);
         {ok, false} ->
             [N | _] = lists:usort(Nodes),
@@ -70,8 +72,7 @@ start(_Type, _Args) ->
                             %% all started
                             ok;
                         false ->
-                            error_logger:info_msg("RA cluster failures  ~w",
-                                                  [Failed]),
+                            logger:info("RA cluster failures  ~w", [Failed]),
                             ok
                     end;
                 false ->
@@ -105,7 +106,7 @@ stop(_State) ->
     ok.
 
 connect_nodes(Nodes) ->
-    error_logger:info_msg("Reconnecting nodes ~p~n", [Nodes]),
+    logger:info("Reconnecting nodes ~p~n", [Nodes]),
     lists:foreach(fun ra_kv_store_app:connect_node/1, Nodes).
 
 connect_node({_, Node}) ->
