@@ -17,8 +17,10 @@ define PROJECT_ENV
 endef
 
 dep_ra = git https://github.com/rabbitmq/ra.git main
-DEPS = ra cowboy
+DEPS = ra cowboy cowlib ranch
 dep_cowboy_commit = 2.9.0
+dep_cowlib = git https://github.com/ninenines/cowlib 2.12.1
+dep_ranch = git https://github.com/ninenines/ranch 1.8.0
 
 DEP_PLUGINS = cowboy
 BUILD_DEPS = relx
