@@ -3,7 +3,7 @@ PROJECT_DESCRIPTION = Experimental raft-based key/value store
 PROJECT_VERSION = 0.1.0
 PROJECT_MOD = ra_kv_store_app
 
-ERLANG_VERSION_FOR_DOCKER_IMAGE ?= 25.0.2
+ERLANG_VERSION_FOR_DOCKER_IMAGE ?= 26.1.2
 
 define PROJECT_ENV
 [
