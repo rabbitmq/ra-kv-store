@@ -1,0 +1,17 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    container:
+      image: pivotalrabbitmq/jepsen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test RA KV store 
+        run: make tests
