@@ -1,0 +1,29 @@
+name: Jepsen Tests for RA
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    container:
+      image: pivotalrabbitmq/jepsen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Jepsen tests 
+        run: ci/jepsen-test.sh
+      - name: Stop cluster
+        if: always()
+        working-directory: terraform-state
+        run: |
+          terraform init
+          terraform destroy -auto-approve
+      - name: Delete configuration
+        if: always()
+        run: |
+          rm jepsen-bot.json
+          rm -rf terraform-state
+          rm -rf terraform.tfstate
