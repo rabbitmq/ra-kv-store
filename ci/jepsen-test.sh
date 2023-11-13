@@ -88,16 +88,16 @@ CREDENTIALS="--username jepsen-bot --ssh-private-key ~/jepsen-bot"
 
 JEPSEN_TESTS_PARAMETERS=(
   "--workload set --nemesis random-partition-halves --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
-  # "--workload set --nemesis partition-halves --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
-  # "--workload set --nemesis partition-majorities-ring --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
-  # "--workload set --nemesis partition-random-node --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
-  # "--workload set --nemesis kill-erlang-process --time-limit 120 --concurrency 10 --rate 10 --time-before-disruption 3 --disruption-duration 3 --release-cursor-every 10 --random-nodes 2"
-  # "--workload set --nemesis kill-erlang-vm --time-limit 120 --concurrency 10 --rate 10 --time-before-disruption 10 --disruption-duration 3 --release-cursor-every 10 --random-nodes 2"
-  # "--workload register --nemesis random-partition-halves --time-limit 180 --concurrency 10 --rate 15 --ops-per-key 25 --time-before-disruption 15 --disruption-duration 25 --erlang-net-ticktime 10"
-  # "--workload register --nemesis kill-erlang-vm --time-limit 120 --concurrency 10 --rate 10 --ops-per-key 10 --time-before-disruption 5 --disruption-duration 20 --erlang-net-ticktime 6 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
-  # "--workload register --nemesis kill-erlang-process --time-limit 180 --concurrency 10 --rate 10 --ops-per-key 25 --time-before-disruption 3 --disruption-duration 3 --erlang-net-ticktime 10 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
-  # "--workload register --nemesis combined --time-limit 120 --concurrency 10 --rate 10 --ops-per-key 10 --time-before-disruption 15 --disruption-duration 20 --erlang-net-ticktime 6 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
-  # "--workload set --nemesis combined --time-limit 240 --concurrency 20 --rate 10 --time-before-disruption 25 --disruption-duration 30 --erlang-net-ticktime 10 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 1"
+  "--workload set --nemesis partition-halves --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
+  "--workload set --nemesis partition-majorities-ring --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
+  "--workload set --nemesis partition-random-node --time-limit 180 --concurrency 10 --rate 10 --erlang-net-ticktime 7 --disruption-duration 25"
+  "--workload set --nemesis kill-erlang-process --time-limit 120 --concurrency 10 --rate 10 --time-before-disruption 3 --disruption-duration 3 --release-cursor-every 10 --random-nodes 2"
+  "--workload set --nemesis kill-erlang-vm --time-limit 120 --concurrency 10 --rate 10 --time-before-disruption 10 --disruption-duration 3 --release-cursor-every 10 --random-nodes 2"
+  "--workload register --nemesis random-partition-halves --time-limit 180 --concurrency 10 --rate 15 --ops-per-key 25 --time-before-disruption 15 --disruption-duration 25 --erlang-net-ticktime 10"
+  "--workload register --nemesis kill-erlang-vm --time-limit 120 --concurrency 10 --rate 10 --ops-per-key 10 --time-before-disruption 5 --disruption-duration 20 --erlang-net-ticktime 6 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
+  "--workload register --nemesis kill-erlang-process --time-limit 180 --concurrency 10 --rate 10 --ops-per-key 25 --time-before-disruption 3 --disruption-duration 3 --erlang-net-ticktime 10 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
+  "--workload register --nemesis combined --time-limit 120 --concurrency 10 --rate 10 --ops-per-key 10 --time-before-disruption 15 --disruption-duration 20 --erlang-net-ticktime 6 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 2"
+  "--workload set --nemesis combined --time-limit 240 --concurrency 20 --rate 10 --time-before-disruption 25 --disruption-duration 30 --erlang-net-ticktime 10 --release-cursor-every 10 --wal-max-size-bytes 524288 --random-nodes 1"
 )
 
 TESTS_COUNT=${#JEPSEN_TESTS_PARAMETERS[@]}
