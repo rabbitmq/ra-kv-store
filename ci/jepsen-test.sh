@@ -112,7 +112,7 @@ do
   n=1
   until [ $n -ge 5 ]
   do
-    echo "Running Jepsen test $TEST_INDEX / $TESTS_COUNT, attempt $n"
+    echo "Running Jepsen test $TEST_INDEX / $TESTS_COUNT, attempt $n ($(date))"
     ssh -o StrictHostKeyChecking=no -i jepsen-bot jepsen-bot@$CONTROLLER_IP "$SOURCE_AND_CD ; lein run test $NODES $CREDENTIALS $jepsen_test_parameter --erlang-distribution-url file:///tmp/ra_kv_store_release-1.tar.gz" >/dev/null
     run_exit_code=$?
 	for worker_ip in "${WORKERS_IP[@]}"
