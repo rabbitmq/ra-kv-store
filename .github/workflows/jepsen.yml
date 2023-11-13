@@ -1,10 +1,9 @@
 name: Jepsen Tests for RA
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  repository_dispatch:
+    types: [ra_change]
 
 concurrency:
   group: jepsen
