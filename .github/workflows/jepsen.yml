@@ -19,6 +19,7 @@ jobs:
         run: ci/jepsen-test.sh
         env:
           GCP_JEPSEN_CREDENTIALS: ${{ secrets.GCP_JEPSEN_CREDENTIALS }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       - name: Stop cluster
         if: always()
         working-directory: terraform-state

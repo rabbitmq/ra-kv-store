@@ -10,6 +10,10 @@ ssh-keygen -t rsa -m pem -f jepsen-bot -C jepsen-bot -N ''
 echo "$GCP_JEPSEN_CREDENTIALS" > jepsen-bot.json
 set -x
 gcloud auth activate-service-account --key-file=jepsen-bot.json
+set +x
+gcloud config set project $GCP_PROJECT
+set -x
+
 
 # destroy the VMs in they already exist (this cannot be done from Terraform unfortunately)
 set +e
