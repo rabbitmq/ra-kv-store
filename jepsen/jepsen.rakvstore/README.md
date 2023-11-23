@@ -117,4 +117,5 @@ changes can be checked by running Maven:
 
 RA KV Store is [Apache 2.0 licensed](https://www.apache.org/licenses/LICENSE-2.0.html).
 
-_Sponsored by [Pivotal](http://pivotal.io)_
+Copyright 2018-2023 Broadcom. All Rights Reserved.
+The term Broadcom refers to Broadcom Inc. and/or its subsidiaries.
