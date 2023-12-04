@@ -7,3 +7,11 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "main"
+  - package-ecosystem: "maven"
+    directory: "/jepsen/jepsen.rakvstore"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+    ignore:
+      - dependency-name: "ch.qos.logback:logback-classic"
+        versions: [ "[1.3,)" ]
