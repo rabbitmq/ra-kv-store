@@ -18,7 +18,7 @@ endef
 
 dep_ra = git https://github.com/rabbitmq/ra.git main
 DEPS = ra cowboy cowlib ranch
-dep_cowboy_commit = 2.10.0
+dep_cowboy_commit = 2.11.0
 dep_cowlib = git https://github.com/ninenines/cowlib 2.12.1
 dep_ranch = git https://github.com/ninenines/ranch 2.1.0
 
