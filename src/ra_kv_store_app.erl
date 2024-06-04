@@ -39,6 +39,7 @@ wait_for_nodes([Node | Rem] = AllNodes) ->
 
 start(_Type, _Args) ->
     {ok, Servers} = application:get_env(ra_kv_store, nodes),
+    ServerName = element(1, hd(Servers)),
     Nodes = [N || {_, N} <- Servers],
     {ok, ServerReference} =
         application:get_env(ra_kv_store, server_reference),
@@ -49,22 +50,19 @@ start(_Type, _Args) ->
     ClusterId = <<"ra_kv_store">>,
     Config = #{},
     Machine = {module, ra_kv_store, Config},
-    ok = ra:start(),
-
-    case application:get_env(ra_kv_store, restart_ra_cluster) of
-        {ok, true} ->
-            Node = {ServerReference, node()},
-            logger:info("Restarting RA node ~p~n", [Node]),
-            ok = ra:restart_server(default, Node);
-        {ok, false} ->
-            [N | _] = lists:usort(Nodes),
-            case N == node() of
-                true ->
-                    %% wait for all nodes to come online
-                    ok = wait_for_nodes(Nodes),
-                    %% only the smallest node declares a cluster
-                    timer:sleep(2000),
-                    ra_system:start_default(),
+    {ok, _} = application:ensure_all_started(ra),
+    SysCfg = #{server_recovery_strategy => registered},
+    Cfg = maps:merge(SysCfg, ra_system:default_config()),
+    {ok, _} = ra_system:start(Cfg),
+    [N | _] = lists:usort(Nodes),
+    case N == node() of
+        true ->
+            %% wait for all nodes to come online
+            ok = wait_for_nodes(Nodes),
+            %% only the smallest node declares a cluster
+            timer:sleep(2000),
+            case whereis(ServerName) of
+                undefined ->
                     {ok, Started, Failed} =
                         ra:start_cluster(default, ClusterId, Machine, Servers),
                     case length(Started) == length(Servers) of
@@ -75,9 +73,11 @@ start(_Type, _Args) ->
                             logger:info("RA cluster failures  ~w", [Failed]),
                             ok
                     end;
-                false ->
+                _Pid ->
+                    %% already started
                     ok
-            end,
+            end;
+        false ->
             ok
     end,
 
@@ -107,7 +107,7 @@ stop(_State) ->
 
 connect_nodes(Nodes) ->
     logger:info("Reconnecting nodes ~p~n", [Nodes]),
-    lists:foreach(fun ra_kv_store_app:connect_node/1, Nodes).
+    lists:foreach(fun connect_node/1, Nodes).
 
 connect_node({_, Node}) ->
     net_kernel:connect_node(Node).
