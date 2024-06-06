@@ -137,7 +137,12 @@ public class Utils {
   }
 
   public static String getSet(Client client, Object key) throws Exception {
-    return client.getSet(key);
+    try {
+      return client.getSet(key);
+    } catch (Exception e) {
+      LOGGER.warn("Error while getting set", e);
+      throw e;
+    }
   }
 
   public static String node(Client client) {
@@ -254,9 +259,13 @@ public class Utils {
                 if (log) {
                   logGetResponse(node, key, response);
                 }
-                  return response;
+                return response;
               } catch (FileNotFoundException e) {
+                LOGGER.warn("FileNotFoundException on set GET operation: {}", e.getMessage());
                 return null;
+              } catch (Exception e) {
+                LOGGER.warn("Error on set GET operation: {}", e.getMessage());
+                throw e;
               }
             } finally {
               if (conn != null) {
@@ -467,7 +476,7 @@ public class Utils {
      */
     public String getSet(Object key) throws Exception {
       LOG.dump();
-      return "#{" + get(key, false).getBody() + "}";
+      return "#{" + get(key, true).getBody() + "}";
     }
   }
 
