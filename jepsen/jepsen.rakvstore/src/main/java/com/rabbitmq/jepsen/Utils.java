@@ -140,7 +140,7 @@ public class Utils {
     try {
       return client.getSet(key);
     } catch (Exception e) {
-      LOGGER.warn("Error while getting set", e);
+      LOGGER.warn("Error while getting set on node {}", client.node, e);
       throw e;
     }
   }

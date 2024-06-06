@@ -47,8 +47,13 @@ read(ServerReference, Key) ->
         {ok, {V, Idx, T}, {Leader, _}} ->
             {{read, V}, {index, Idx}, {term, T}, {leader, Leader}};
         {timeout, _} ->
+            logger:info("Read operation failed because of timeout~n"),
             timeout;
         {error, nodedown} ->
+            logger:info("Read operation failed because node is down~n"),
+            error;
+        R ->
+            logger:warning("Unexpected result for read operation: ~p~n", [R]),
             error
     end.
 

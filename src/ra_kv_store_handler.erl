@@ -27,8 +27,10 @@ init(Req0 = #{method := <<"GET">>}, State) ->
     Value = ra_kv_store:read(ServerReference, Key),
     Req = case Value of
               timeout ->
+                  logger:info("Timeout on GET, returning 503~n"),
                   cowboy_req:reply(503, #{}, "RA timeout", Req0);
               error ->
+                  logger:info("Error on GET, returning 503~n"),
                   cowboy_req:reply(503, #{}, "RA error", Req0);
               {{read, undefined},
                {index, Index},
