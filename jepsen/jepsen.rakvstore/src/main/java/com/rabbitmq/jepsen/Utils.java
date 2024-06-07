@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -264,8 +265,13 @@ public class Utils {
                 LOGGER.warn("FileNotFoundException on set GET operation: {}", e.getMessage());
                 return null;
               } catch (Exception e) {
-                LOGGER.warn("Error on set GET operation: {}", e.getMessage());
-                throw e;
+                int responseCode = conn.getResponseCode();
+                String responseBody = body(conn.getErrorStream());
+                if (responseCode == 503 && "RA timeout".equals(responseBody)) {
+                  throw new RaTimeoutException(raHeaders(conn));
+                } else {
+                  throw e;
+                }
               }
             } finally {
               if (conn != null) {
@@ -452,6 +458,23 @@ public class Utils {
       }
     }
 
+    private <T> T retry(Callable<T> operation, Predicate<Exception> retryPredicate) throws Exception {
+      int attemptCount = 1;
+      while (attemptCount <= 3) {
+        try {
+          return operation.call();
+        } catch (Exception e) {
+          if (retryPredicate.test(e)) {
+            attemptCount++;
+            LOGGER.info("Operation failed with '{}' exception, retrying...", e.getClass().getSimpleName());
+          } else {
+            throw e;
+          }
+        }
+      }
+      throw new RuntimeException("Operation failed after " + (attemptCount - 1) + " attempts");
+    }
+
     private String body(InputStream inputStream) throws IOException {
       if (inputStream != null) {
         StringBuilder content = new StringBuilder();
@@ -476,7 +499,7 @@ public class Utils {
      */
     public String getSet(Object key) throws Exception {
       LOG.dump();
-      return "#{" + get(key, true).getBody() + "}";
+      return retry(() -> "#{" + get(key, true).getBody() + "}", e -> e instanceof RaTimeoutException);
     }
   }
 
