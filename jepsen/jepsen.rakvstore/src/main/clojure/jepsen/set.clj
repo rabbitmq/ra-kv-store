@@ -45,7 +45,7 @@
                       (catch com.rabbitmq.jepsen.RaTimeoutException rtex
                         (assoc op
                                :type  :info
-                               :error (str :timeout " " (.getHeaders rtex))))
+                               :error (str :timeout " " (com.rabbitmq.jepsen.Utils/node conn) " " (.getHeaders rtex))))
                       (catch com.rabbitmq.jepsen.RaNodeDownException _
                         (assoc op
                                :type  :info
