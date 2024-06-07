@@ -467,6 +467,7 @@ public class Utils {
           if (retryPredicate.test(e)) {
             attemptCount++;
             LOGGER.info("Operation failed with '{}' exception, retrying...", e.getClass().getSimpleName());
+            Thread.sleep(1000);
           } else {
             throw e;
           }
