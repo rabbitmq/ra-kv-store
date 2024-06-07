@@ -135,9 +135,11 @@
                             (do
                               (let [
                                     ra-node-id (com.rabbitmq.jepsen.Utils/raNodeId node)
-                                    erlang-eval (str "eval \"sys:get_status(" ra-node-id ").\"")
+                                    erlang-eval-status (str "eval \"sys:get_status(" ra-node-id ").\"")
+                                    erlang-eval-counters (str "eval \"ra_counters:overview().\"")
                                     ]
-                                   (c/exec* binary erlang-eval ">" status-file)
+                                   (c/exec* binary erlang-eval-status ">>" status-file)
+                                   (c/exec* binary erlang-eval-counters ">>" status-file)
                                    ))
                             (do (info node "RA KV Store stopped, cannot get status")
                                 ))
