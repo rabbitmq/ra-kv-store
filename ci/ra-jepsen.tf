@@ -12,7 +12,7 @@ resource "google_compute_instance" "jepsen_controller" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-10"
+      image = "debian-cloud/debian-11"
     }
   }
 
@@ -43,7 +43,7 @@ resource "google_compute_instance" "jepsen_worker" {
   machine_type = "n1-highcpu-2"
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-10"
+      image = "debian-cloud/debian-11"
     }
   }
 
