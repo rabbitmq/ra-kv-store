@@ -25,10 +25,7 @@ import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -67,10 +64,10 @@ public class Utils {
     walMaxSizeBytes =
         walMaxSizeBytes == null ? megaBytes128 : Long.parseLong(walMaxSizeBytes.toString());
 
-    List<String> nodes = nodesObj.stream().map(Utils::raNodeId).collect(Collectors.toList());
-
+    List<String> nodes = nodesObj.stream().map(Object::toString).sorted().collect(Collectors.toList());
     String node = currentNode.toString();
-    String nodeIndex = node.substring(node.length() - 1, node.length());
+    String nodeIndex = String.valueOf(nodes.indexOf(node) + 1);
+    List<String> erlangNodes = nodesObj.stream().map(n -> raNodeId(n, nodes.indexOf(n.toString()))).collect(Collectors.toList());
 
     String configuration =
         String.format(
@@ -88,17 +85,16 @@ public class Utils {
                 + "    ]}\n"
                 + "].",
             walMaxSizeBytes,
-            String.join(", ", nodes),
+            String.join(", ", erlangNodes),
             nodeIndex,
             releaseCursorEvery);
 
     return configuration;
   }
 
-  public static String raNodeId(Object n) {
+  public static String raNodeId(Object n, int index) {
     String node = n.toString();
-    String nodeIndex = node.substring(node.length() - 1, node.length());
-    return String.format("{ra_kv%s, 'kv@%s'}", nodeIndex, node);
+    return String.format("{ra_kv%d, 'kv@%s'}", index + 1, node);
   }
 
   static String erlangNetTickTime(Map<Object, Object> test) {

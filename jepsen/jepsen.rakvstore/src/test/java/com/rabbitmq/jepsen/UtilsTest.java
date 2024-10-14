@@ -66,8 +66,8 @@ public class UtilsTest {
                 + "    ]},\n"
                 + "    {ra_kv_store, [\n"
                 + "        {port, 8080},\n"
-                + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}]},\n"
-                + "        {server_reference, ra_kv0},\n"
+                + "        {nodes, [{ra_kv1, 'kv@192.168.33.10'}]},\n"
+                + "        {server_reference, ra_kv1},\n"
                 + "        {release_cursor_every, -1}\n"
                 + "    ]}\n"
                 + "].");
@@ -85,8 +85,8 @@ public class UtilsTest {
                 + "    ]},\n"
                 + "    {ra_kv_store, [\n"
                 + "        {port, 8080},\n"
-                + "        {nodes, [{ra_kv0, 'kv@192.168.33.10'}, {ra_kv1, 'kv@192.168.33.11'}, {ra_kv2, 'kv@192.168.33.12'}]},\n"
-                + "        {server_reference, ra_kv0},\n"
+                + "        {nodes, [{ra_kv1, 'kv@192.168.33.10'}, {ra_kv2, 'kv@192.168.33.11'}, {ra_kv3, 'kv@192.168.33.12'}]},\n"
+                + "        {server_reference, ra_kv1},\n"
                 + "        {release_cursor_every, -1}\n"
                 + "    ]}\n"
                 + "].",
@@ -189,8 +189,8 @@ public class UtilsTest {
 
   @Test
   public void raNodeId() {
-    assertThat(Utils.raNodeId("n1")).isEqualTo("{ra_kv1, 'kv@n1'}");
-    assertThat(Utils.raNodeId("n2")).isEqualTo("{ra_kv2, 'kv@n2'}");
+    assertThat(Utils.raNodeId("n1", 0)).isEqualTo("{ra_kv1, 'kv@n1'}");
+    assertThat(Utils.raNodeId("n2", 1)).isEqualTo("{ra_kv2, 'kv@n2'}");
   }
 
   @Test
