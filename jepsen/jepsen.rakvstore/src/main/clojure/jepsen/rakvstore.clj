@@ -134,7 +134,7 @@
                                          (catch RuntimeException _ "")))
                             (do
                               (let [
-                                    ra-node-id (com.rabbitmq.jepsen.Utils/raNodeId node)
+                                    ra-node-id (com.rabbitmq.jepsen.Utils/raNodeId node -1)
                                     erlang-eval-status (str "eval \"sys:get_status(" ra-node-id ").\"")
                                     erlang-eval-counters (str "eval \"ra_counters:overview().\"")
                                     ]

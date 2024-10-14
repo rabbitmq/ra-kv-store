@@ -26,10 +26,7 @@ import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,6 +48,8 @@ public class Utils {
 
   // static JepsenTestLog LOG = new DefaultJepsenTestLog();
   static JepsenTestLog LOG = new NoOpJepsenTestLog();
+
+  private static final Map<String, String> NODE_TO_ERLANG_NODE = new ConcurrentHashMap<>();
 
   public static String configuration(Map<Object, Object> test, Object currentNode) {
     List<Object> nodesObj = (List<Object>) get(test, ":nodes");
@@ -94,7 +93,14 @@ public class Utils {
 
   public static String raNodeId(Object n, int index) {
     String node = n.toString();
-    return String.format("{ra_kv%d, 'kv@%s'}", index + 1, node);
+    if (index == -1) {
+      // we don't have enough context, but the node name should have been computed already
+      return NODE_TO_ERLANG_NODE.get(node);
+    } else {
+      String erlangNode =  String.format("{ra_kv%d, 'kv@%s'}", index + 1, node);
+      NODE_TO_ERLANG_NODE.putIfAbsent(node, erlangNode);
+      return erlangNode;
+    }
   }
 
   static String erlangNetTickTime(Map<Object, Object> test) {
