@@ -6,7 +6,7 @@ set +x
 # create SSH key that will be used to connect to the Jepsen VMs
 ssh-keygen -t rsa -m pem -f jepsen-bot -C jepsen-bot -N ''
 
-# persist the GCP credentials in a file for Terraform
+mkdir -p ~/.aws
 echo "$AWS_CONFIG" > ~/.aws/config 
 echo "$AWS_CREDENTIALS" > ~/.aws/credentials 
 set -x
