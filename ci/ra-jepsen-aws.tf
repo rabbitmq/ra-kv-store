@@ -18,7 +18,7 @@ data "aws_ami" "debian" {
 }
 
 resource "aws_key_pair" "ssh_key" {
-  key_name   = "ssh-key"
+  key_name   = "jepsen-ra-kv-store-key"
   public_key = file("jepsen-bot.pub") 
 }
 

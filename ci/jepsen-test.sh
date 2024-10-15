@@ -11,9 +11,10 @@ echo "$AWS_CONFIG" > ~/.aws/config
 echo "$AWS_CREDENTIALS" > ~/.aws/credentials 
 set -x
 
-# destroy the VMs in they already exist (this cannot be done from Terraform unfortunately)
+# destroy existing resources in they already exist
 set +e
 aws ec2 terminate-instances --no-cli-pager --instance-ids $(aws ec2 describe-instances --query 'Reservations[].Instances[].InstanceId' --filters "Name=tag:Name,Values=JepsenRaKvStore" --output text)
+aws ec2 delete-key-pair --no-cli-pager --key-name jepsen-ra-kv-store-key
 set -e
 
 # copy Terraform configuration file in current directory
