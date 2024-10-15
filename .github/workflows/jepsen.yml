@@ -26,6 +26,7 @@ jobs:
         run: |
           terraform init
           terraform destroy -auto-approve
+          aws ec2 delete-key-pair --no-cli-pager --key-name jepsen-ra-kv-store-key
       - name: Delete configuration
         if: always()
         run: |
