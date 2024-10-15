@@ -10,16 +10,16 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
-      image: pivotalrabbitmq/jepsen
+      image: pivotalrabbitmq/jepsen:aws
     steps:
       - uses: actions/checkout@v4
       - name: Jepsen tests 
         run: ci/jepsen-test.sh
         env:
-          GCP_JEPSEN_CREDENTIALS: ${{ secrets.GCP_JEPSEN_CREDENTIALS }}
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          AWS_CONFIG: ${{ secrets.AWS_CONFIG }}
+          AWS_CREDENTIALS: ${{ secrets.AWS_CREDENTIALS }}
       - name: Stop cluster
         if: always()
         working-directory: terraform-state
@@ -29,6 +29,6 @@ jobs:
       - name: Delete configuration
         if: always()
         run: |
-          rm jepsen-bot.json
+          rm -rf ~/.aws 
           rm -rf terraform-state
           rm -rf terraform.tfstate

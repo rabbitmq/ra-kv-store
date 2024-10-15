@@ -15,8 +15,8 @@ sudo apt-get install -y -V --fix-missing --no-install-recommends \
     gnupg \
     curl
 
-echo "deb https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian buster main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
-echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian buster main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
+echo "deb https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bullseye main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
+echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bullseye main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
 wget https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 sudo apt-key add cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 
@@ -28,13 +28,13 @@ Pin: version $ERLANG_VERSION
 Pin-Priority: 1000
 EOF
 
-# install Erlang a few utilities
+# install Erlang and some utilities
 sudo apt-get update
 sudo apt-get install -y -V --fix-missing --no-install-recommends git make gnuplot erlang-nox erlang-dev
 
 # install Java 8 (needed by Jepsen)
 export JAVA_PATH="/usr/lib/jdk-8"
-sudo wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u392-b08/OpenJDK8U-jdk_x64_linux_hotspot_8u392b08.tar.gz
+sudo wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u422-b05/OpenJDK8U-jdk_x64_linux_hotspot_8u422b05.tar.gz
 sudo mkdir $JAVA_PATH
 sudo tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
 export JAVA_HOME=$JAVA_PATH
