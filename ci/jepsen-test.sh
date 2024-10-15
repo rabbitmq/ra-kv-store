@@ -29,7 +29,6 @@ terraform apply -auto-approve
 mkdir terraform-state
 
 # save Terraform state and configuration to clean up even if the task fails
-cp jepsen-bot.json terraform-state
 cp jepsen-bot terraform-state
 cp jepsen-bot.pub terraform-state
 cp -r .terraform terraform-state
