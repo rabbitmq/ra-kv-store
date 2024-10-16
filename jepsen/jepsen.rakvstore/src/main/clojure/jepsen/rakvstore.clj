@@ -378,7 +378,7 @@
     :parse-fn parse-long
     :validate [pos? "Must be a positive integer."]]
    [nil "--erlang-distribution-url URL" "URL to retrieve the Erlang distribution archive"
-    :default "file:///jepsen/jepsen.rakvstore/ra_kv_store_release-1.tar.gz"
+    :default "file:///root/jepsen.rakvstore/ra_kv_store_release-1.tar.gz"
     :parse-fn read-string]
    ])
 
