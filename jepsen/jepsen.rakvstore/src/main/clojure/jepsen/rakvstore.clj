@@ -38,11 +38,6 @@
 (defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
 (defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
 
-(defn parse-long
-      "Parses a string to a Long. Passes through `nil`."
-      [s]
-      (when s (Long/parseLong s)))
-
 (defrecord Client [conn]
            client/Client
            (open! [this test node]
@@ -285,26 +280,25 @@
       "Nemesis generator that triggers Erlang VM/process killing during network partition."
       [opts]
       {
-       :generator (gen/seq  (cycle [
-                                    (gen/sleep (:time-before-disruption opts))
-                                    {:type :info :f :split-start}
-                                    (gen/stagger (/ (:disruption-duration opts) 8) gen/void)
-                                    (gen/mix
-                                      [
-                                       {:type :info, :f :kill-erlang-vm-start}
-                                       {:type :info, :f :kill-erlang-process-start}
-                                       ]
-                                      )
-                                    (gen/stagger (/ (:disruption-duration opts) 6) gen/void)
-                                    {:type :info :f :kill-erlang-vm-stop}
-                                    {:type :info :f :kill-erlang-process-stop}
-                                    (gen/sleep (:disruption-duration opts))
-                                    {:type :info :f :split-stop}
-                                    ])
+       :generator (cycle [
+                          (gen/sleep (:time-before-disruption opts))
+                          {:type :info :f :split-start}
+                          (gen/stagger (/ (:disruption-duration opts) 8))
+                          (gen/mix
+                            [
+                             {:type :info, :f :kill-erlang-vm-start}
+                             {:type :info, :f :kill-erlang-process-start}
+                             ]
                             )
-       :stop-generator (gen/seq [(gen/once {:type :info, :f :kill-erlang-vm-stop})
+                          (gen/stagger (/ (:disruption-duration opts) 6))
+                          {:type :info :f :kill-erlang-vm-stop}
+                          {:type :info :f :kill-erlang-process-stop}
+                          (gen/sleep (:disruption-duration opts))
+                          {:type :info :f :split-stop}
+                          ])
+       :stop-generator [(gen/once {:type :info, :f :kill-erlang-vm-stop})
                         (gen/nemesis (gen/once {:type :info, :f :kill-erlang-process-stop}))
-                        (gen/nemesis (gen/once {:type :info, :f :split-stop}))] )
+                        (gen/nemesis (gen/once {:type :info, :f :split-stop}))]
 
        })
 
@@ -312,13 +306,12 @@
       "Nemesis with single disruption."
       [opts]
       {
-       :generator (gen/seq  (cycle [
+       :generator (cycle [
                          (gen/sleep (:time-before-disruption opts))
                          {:type :info :f :start}
                          (gen/sleep (:disruption-duration opts))
                          {:type :info :f :stop}
                          ])
-                 )
        :stop-generator (gen/once {:type :info, :f :stop})
        })
 
@@ -402,7 +395,8 @@
             ]
       (merge tests/noop-test
              opts
-             {:name (str (name (:workload opts)))
+             {:pure-generators true
+              :name (str (name (:workload opts)))
               :os   debian/os
               :db   (db)
               :checker    (checker/compose

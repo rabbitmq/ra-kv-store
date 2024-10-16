@@ -31,7 +31,7 @@ apt install -y \
     unzip \
     wget
 
-echo 'PubkeyAcceptedKeyTypes +ssh-rsa' > /etc/ssh/sshd_config
+# echo 'PubkeyAcceptedKeyTypes +ssh-rsa' > /etc/ssh/sshd_config
 /etc/init.d/ssh start
 
 mkdir -p ~/.ssh/

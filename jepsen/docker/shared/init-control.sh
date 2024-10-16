@@ -10,8 +10,19 @@ apt-get install -y -V --fix-missing --no-install-recommends \
 
 # Jepsen dependencies
 apt install -y -V --fix-missing --no-install-recommends \
-  openjdk-17-jdk libjna-java gnuplot graphviz openssh-client
+  libjna-java gnuplot graphviz openssh-client git
 
+# Java
+export JAVA_PATH="/usr/lib/jdk-21"
+JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.4_7.tar.gz"
+wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" $JAVA_URL
+ 
+mkdir -p $JAVA_PATH
+tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
+rm "$JAVA_PATH.tar.gz"
+ln -s /usr/lib/jdk-21/bin/java /usr/bin/java
+
+# Leiningen
 wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
 mv lein /usr/bin/lein
 chmod u+x /usr/bin/lein

@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
@@ -249,7 +250,7 @@ public class Utils {
     private Response<String> get(Object key, boolean log) throws Exception {
       return request(
           () -> {
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            URL url = new URI(String.format("http://%s:8080/%s", this.node, key.toString())).toURL();
             HttpURLConnection conn = null;
             try {
               conn = (HttpURLConnection) url.openConnection();
@@ -295,7 +296,7 @@ public class Utils {
     Response write(Object key, Object value) throws Exception {
       return request(
           () -> {
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            URL url = new URI(String.format("http://%s:8080/%s", this.node, key.toString())).toURL();
             HttpURLConnection conn = null;
             Response response = null;
             try {
@@ -330,7 +331,7 @@ public class Utils {
       return request(
           () -> {
             CasRequest request = LOG.casRequest(node, oldValue, newValue);
-            URL url = new URL(String.format("http://%s:8080/%s", this.node, key.toString()));
+            URL url = new URI(String.format("http://%s:8080/%s", this.node, key.toString())).toURL();
             HttpURLConnection conn = null;
             try {
               conn = (HttpURLConnection) url.openConnection();

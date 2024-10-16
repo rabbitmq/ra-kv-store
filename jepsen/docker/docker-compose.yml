@@ -6,6 +6,8 @@ x-node-common: &node-common
   volumes:
     - ../jepsen.rakvstore:/root/jepsen.rakvstore
     - ./shared:/root/shared
+  cap_add:
+    - NET_ADMIN
 
 services:
   control:
