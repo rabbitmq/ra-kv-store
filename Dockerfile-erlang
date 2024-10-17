@@ -1,26 +1,41 @@
-FROM buildpack-deps:buster
+FROM debian:bookworm
 
-ENV OTP_VERSION="26.1.2" \
-    REBAR3_VERSION="3.22.1"
+ENV OTP_VERSION="26.2.5.4" \
+    REBAR3_VERSION="3.23.0"
 
 LABEL org.opencontainers.image.version=$OTP_VERSION
 
-# We'll install the build dependencies for erlang-odbc along with the erlang
-# build process:
+# We'll install the build dependencies, and purge them on the last step to make
+# sure our final image contains only what we've just built:
 RUN set -xe \
 	&& OTP_DOWNLOAD_URL="https://github.com/erlang/otp/archive/OTP-${OTP_VERSION}.tar.gz" \
-	&& OTP_DOWNLOAD_SHA256="56042d53b30863d4e720ebf463d777f0502f8c986957fc3a9e63dae870bbafe0" \
-	&& runtimeDeps='libodbc1 \
-			libsctp1 \
-			libwxgtk3.0' \
-	&& buildDeps='unixodbc-dev \
-			libsctp-dev \
-			libwxgtk3.0-dev' \
+	&& OTP_DOWNLOAD_SHA256="daa29766431e91489367e87f2ec34e65ce05a0f2dd48bf666829951e636f6016" \
+	&& fetchDeps=' \
+		curl \
+		ca-certificates' \
 	&& apt-get update \
-	&& apt-get install -y --no-install-recommends $runtimeDeps \
-	&& apt-get install -y --no-install-recommends $buildDeps \
+	&& apt-get install -y --no-install-recommends $fetchDeps \
 	&& curl -fSL -o otp-src.tar.gz "$OTP_DOWNLOAD_URL" \
 	&& echo "$OTP_DOWNLOAD_SHA256  otp-src.tar.gz" | sha256sum -c - \
+	&& runtimeDeps=' \
+		libodbc1 \
+		libssl3 \
+		libsctp1 \
+	' \
+	&& buildDeps=' \
+		autoconf \
+		dpkg-dev \
+		gcc \
+    git \
+		g++ \
+		make \
+		libncurses-dev \
+		unixodbc-dev \
+		libssl-dev \
+		libsctp-dev \
+	' \
+	&& apt-get install -y --no-install-recommends $runtimeDeps \
+	&& apt-get install -y --no-install-recommends $buildDeps \
 	&& export ERL_TOP="/usr/src/otp_src_${OTP_VERSION%%@*}" \
 	&& mkdir -vp $ERL_TOP \
 	&& tar -xzf otp-src.tar.gz -C $ERL_TOP --strip-components=1 \
@@ -32,31 +47,8 @@ RUN set -xe \
 	  && make -j$(nproc) \
 	  && make install ) \
 	&& find /usr/local -name examples | xargs rm -rf \
-	&& apt-get purge -y --auto-remove $buildDeps \
-	&& rm -rf $ERL_TOP /var/lib/apt/lists/*
-
-CMD ["erl"]
-
-# extra useful tools here: rebar & rebar3
-
-ENV REBAR_VERSION="2.6.4"
-
-RUN set -xe \
-	&& REBAR_DOWNLOAD_URL="https://github.com/rebar/rebar/archive/${REBAR_VERSION}.tar.gz" \
-	&& REBAR_DOWNLOAD_SHA256="577246bafa2eb2b2c3f1d0c157408650446884555bf87901508ce71d5cc0bd07" \
-	&& mkdir -p /usr/src/rebar-src \
-	&& curl -fSL -o rebar-src.tar.gz "$REBAR_DOWNLOAD_URL" \
-	&& echo "$REBAR_DOWNLOAD_SHA256 rebar-src.tar.gz" | sha256sum -c - \
-	&& tar -xzf rebar-src.tar.gz -C /usr/src/rebar-src --strip-components=1 \
-	&& rm rebar-src.tar.gz \
-	&& cd /usr/src/rebar-src \
-	&& ./bootstrap \
-	&& install -v ./rebar /usr/local/bin/ \
-	&& rm -rf /usr/src/rebar-src
-
-RUN set -xe \
 	&& REBAR3_DOWNLOAD_URL="https://github.com/erlang/rebar3/archive/${REBAR3_VERSION}.tar.gz" \
-	&& REBAR3_DOWNLOAD_SHA256="2855b5784300865d2e43cb7a135cb2bba144cf15214c619065b918afc8cc6eb9" \
+	&& REBAR3_DOWNLOAD_SHA256="00646b692762ffd340560e8f16486dbda840e1546749ee5a7f58feeb77e7b516" \
 	&& mkdir -p /usr/src/rebar3-src \
 	&& curl -fSL -o rebar3-src.tar.gz "$REBAR3_DOWNLOAD_URL" \
 	&& echo "$REBAR3_DOWNLOAD_SHA256 rebar3-src.tar.gz" | sha256sum -c - \
@@ -65,4 +57,5 @@ RUN set -xe \
 	&& cd /usr/src/rebar3-src \
 	&& HOME=$PWD ./bootstrap \
 	&& install -v ./rebar3 /usr/local/bin/ \
-	&& rm -rf /usr/src/rebar3-src
+	&& rm -rf /usr/src/rebar3-src \
+	&& rm -rf $ERL_TOP /var/lib/apt/lists/*

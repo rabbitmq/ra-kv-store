@@ -15,8 +15,8 @@ sudo apt-get install -y -V --fix-missing --no-install-recommends \
     gnupg \
     curl
 
-echo "deb https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bullseye main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
-echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bullseye main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
+echo "deb https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bookworm main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
+echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bookworm main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
 wget https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 sudo apt-key add cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 
@@ -30,17 +30,25 @@ EOF
 
 # install Erlang and some utilities
 sudo apt-get update
-sudo apt-get install -y -V --fix-missing --no-install-recommends git make gnuplot erlang-nox erlang-dev
-
-# install Java 8 (needed by Jepsen)
-export JAVA_PATH="/usr/lib/jdk-8"
-sudo wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u422-b05/OpenJDK8U-jdk_x64_linux_hotspot_8u422b05.tar.gz
-sudo mkdir $JAVA_PATH
-sudo tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
-export JAVA_HOME=$JAVA_PATH
-export PATH=$PATH:$JAVA_HOME/bin
-echo "export JAVA_HOME=$JAVA_PATH" >> .profile
-echo "export PATH=$PATH:$JAVA_PATH/bin" >> .profile
+sudo apt-get install -y -V --fix-missing --no-install-recommends \
+  erlang-nox \
+  erlang-dev \
+  git \
+  gnuplot \
+  graphviz \
+  libjna-java \
+  make \
+  openssh-client
+ 
+# install Java
+export JAVA_PATH="/usr/lib/jdk-21"
+JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz"
+wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" $JAVA_URL
+ 
+mkdir -p $JAVA_PATH
+tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
+rm "$JAVA_PATH.tar.gz"
+ln -s /usr/lib/jdk-21/bin/java /usr/bin/java
 
 # install lein (to compile and launch the Jepsen tests)
 wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein

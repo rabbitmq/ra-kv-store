@@ -67,6 +67,5 @@
       {:client (SetClient. "a-set" nil)
        :checker (checker/set)
        :generator (->> (range)
-                       (map (fn [x] {:type :invoke, :f :add, :value x}))
-                       gen/seq)
+                       (map (fn [x] {:type :invoke, :f :add, :value x}))) 
        :final-generator (gen/once {:type :invoke, :f :read, :value nil})})
