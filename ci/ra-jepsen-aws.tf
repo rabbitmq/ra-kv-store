@@ -80,5 +80,9 @@ output "workers_ip" {
 }
 
 output "workers_hostname" {
-  value       = join(" ", [for worker in aws_instance.jepsen_worker : worker.private_dns])
+  value       = join(" ", [for worker in aws_instance.jepsen_worker : split(".", worker.private_dns)[0]])
+}
+
+output "workers_hosts_entries" {
+  value = join("\n", [for worker in aws_instance.jepsen_worker : join(" ", [worker.private_ip, split(".", worker.private_dns)[0]])])
 }
