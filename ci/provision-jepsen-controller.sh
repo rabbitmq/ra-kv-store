@@ -43,11 +43,11 @@ sudo apt-get install -y -V --fix-missing --no-install-recommends \
 # install Java
 export JAVA_PATH="/usr/lib/jdk-21"
 JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz"
-wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" $JAVA_URL
+wget --progress dot:giga --output-document jdk.tar.gz $JAVA_URL
  
 sudo mkdir -p $JAVA_PATH
-sudo tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
-rm "$JAVA_PATH.tar.gz"
+sudo tar --extract --file jdk.tar.gz --directory "$JAVA_PATH" --strip-components 1
+rm jdk.tar.gz
 sudo ln -s "$JAVA_PATH/bin/java" /usr/bin/java
 
 # install lein (to compile and launch the Jepsen tests)
