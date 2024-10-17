@@ -8,30 +8,31 @@ apt install -y -V --fix-missing --no-install-recommends \
     gnupg \
     curl
 
-apt install -y \
-    build-essential \
-    bzip2 \
-    curl \
-    faketime \
-    iproute2 \
-    iptables \
-    iputils-ping \
-    libzip4 \
-    logrotate \
-    man \
-    man-db \
-    net-tools \
-    ntpdate \
-    openssh-server \
-    psmisc \
-    python3 \
-    rsyslog \
-    sudo \
-    tar \
-    unzip \
-    wget
+apt install -y openssh-server sudo
 
-# echo 'PubkeyAcceptedKeyTypes +ssh-rsa' > /etc/ssh/sshd_config
+# apt install -y \
+    # build-essential \
+    # bzip2 \
+    # curl \
+    # faketime \
+    # iproute2 \
+    # iptables \
+    # iputils-ping \
+    # libzip4 \
+    # logrotate \
+    # man \
+    # man-db \
+    # net-tools \
+    # ntpdate \
+    # openssh-server \
+    # psmisc \
+    # python3 \
+    # rsyslog \
+    # sudo
+    # tar \
+    # unzip \
+    # wget
+
 /etc/init.d/ssh start
 
 mkdir -p ~/.ssh/
