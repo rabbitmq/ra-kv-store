@@ -45,7 +45,7 @@ ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$CONTROLLER_IP "sourc
 
 # add the worker hostnames to /etc/hosts
 WORKERS_HOSTS_ENTRIES=$(terraform output -raw workers_hosts_entries)
-ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$CONTROLLER_IP "echo $WORKERS_HOSTS_ENTRIES | sudo tee --append /etc/hosts"
+ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$CONTROLLER_IP "echo '$WORKERS_HOSTS_ENTRIES' | sudo tee --append /etc/hosts"
 
 # copy the RA KV store distribution on all the Jepsen workers
 WORKERS=( $(terraform output -raw workers_hostname) )
@@ -67,7 +67,7 @@ done
 for worker_ip in "${WORKERS_IP[@]}"
 do
   ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$worker_ip "sudo apt-get update"
-  ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$worker_ip "echo $WORKERS_HOSTS_ENTRIES | sudo tee --append /etc/hosts"
+  ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$worker_ip "echo '$WORKERS_HOSTS_ENTRIES' | sudo tee --append /etc/hosts"
 done
 
 # build up some fixed parameters for the Jepsen tests
