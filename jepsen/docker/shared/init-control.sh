@@ -20,7 +20,7 @@ wget --progress dot:giga --output-document "$JAVA_PATH.tar.gz" $JAVA_URL
 mkdir -p $JAVA_PATH
 tar --extract --file "$JAVA_PATH.tar.gz" --directory "$JAVA_PATH" --strip-components 1
 rm "$JAVA_PATH.tar.gz"
-ln -s /usr/lib/jdk-21/bin/java /usr/bin/java
+ln -s "$JAVA_PATH/bin/java" /usr/bin/java
 
 # Leiningen
 wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
