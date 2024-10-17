@@ -63,7 +63,6 @@ done
 for worker_ip in "${WORKERS_IP[@]}"
 do
   ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$worker_ip "sudo apt-get update"
-  ssh -o StrictHostKeyChecking=no -i jepsen-bot $JEPSEN_USER@$worker_ip "sudo apt-get install -y build-essential bzip2 curl faketime iproute2 iptables iputils-ping libzip4 logrotate man man-db net-tools ntpdate psmisc python rsyslog tar unzip wget"
 done
 
 # build up some fixed parameters for the Jepsen tests
