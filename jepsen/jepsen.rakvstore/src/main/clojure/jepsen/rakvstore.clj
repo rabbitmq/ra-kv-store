@@ -285,16 +285,16 @@
        :generator (cycle [
                           (gen/sleep (:time-before-disruption opts))
                           {:type :info :f :split-start}
-                          (gen/stagger (/ (:disruption-duration opts) 8))
-                          (gen/mix
-                            [
-                             {:type :info, :f :kill-erlang-vm-start}
-                             {:type :info, :f :kill-erlang-process-start}
-                             ]
-                            )
-                          (gen/stagger (/ (:disruption-duration opts) 6))
-                          {:type :info :f :kill-erlang-vm-stop}
-                          {:type :info :f :kill-erlang-process-stop}
+                          (gen/stagger (/ (:disruption-duration opts) 8)
+                                       (gen/mix
+                                         [
+                                          {:type :info, :f :kill-erlang-vm-start}
+                                          {:type :info, :f :kill-erlang-process-start}
+                                          ]
+                                         ))
+                          (gen/stagger (/ (:disruption-duration opts) 6)
+                                       (gen/phases {:type :info :f :kill-erlang-vm-stop}
+                                                   {:type :info :f :kill-erlang-process-stop}))
                           (gen/sleep (:disruption-duration opts))
                           {:type :info :f :split-stop}
                           ])
