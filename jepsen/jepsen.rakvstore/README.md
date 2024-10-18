@@ -10,8 +10,14 @@ release needs to be built on Linux-based system, as this is where it executes in
 The easiest is to use a one-time Docker container to compile the release
 with the appropriate configuration:
 
+```shell
+make rel-jepsen
 ```
-ra-kv-store $ make rel-jepsen
+
+Then copy the release file in the Jepsen test directory:
+
+```shell
+cp _rel/ra_kv_store_release/ra_kv_store_release-1.tar.gz jepsen/jepsen.rakvstore
 ```
 
 ## Running Jepsen tests with Docker
@@ -19,34 +25,26 @@ ra-kv-store $ make rel-jepsen
 **Make sure the Erlang release file `ra_kv_store_release-1.tar.gz` is in the
 `jepsen/jepsen.rakvstore/` directory.**
 
-`cd` into the `jepsen` directory and set the `JEPSEN_ROOT` environment variable:
-```
-ra-kv-store $ cd jepsen
-jepsen $ export JEPSEN_ROOT=$(pwd)
-```
+`cd` into the `jepsen/docker` directory and start the containers:
 
-`cd` into the `docker` directory:
-```
-jepsen $ cd docker
-```
-
-Start the containers:
-
-```
-docker $ ./up.sh --dev
+```shell
+cd jepsen/docker
+ssh-keygen -t rsa -m pem -f shared/jepsen-bot -C jepsen-bot -N ''
+docker compose up --detach
+./provision.sh
 ```
 
 Connect to the Jepsen control container:
 
-```
-docker $ docker exec -it jepsen-control bash
+```shell
+docker exec -it jepsen-control bash
 ```
 
 Inside the control container, `cd` into the RA KV Store test directory and launch a test:
 
-```
-$ cd jepsen.rakvstore
-$ lein run test --time-limit 15 --concurrency 10 --rate 1 --workload set --nemesis random-partition-halves
+```shell
+cd /root/jepsen.rakvstore
+lein run test --nodes n1,n2,n3 --ssh-private-key /root/shared/jepsen-bot --time-limit 15 --concurrency 10 --rate 10 --workload set --nemesis random-partition-halves
 ```
 
 The execution should finish with something like:
@@ -66,6 +64,12 @@ INFO [2018-06-25 08:45:23,157] jepsen test runner - jepsen.core {:ok-count 83,
 
 
 Everything looks good! ヽ(‘ー`)ノ
+```
+
+Here is how to shut down and delete the containers:
+
+```shell
+docker compose down
 ```
 
 You can list all the options of the tests:
@@ -117,5 +121,5 @@ changes can be checked by running Maven:
 
 RA KV Store is [Apache 2.0 licensed](https://www.apache.org/licenses/LICENSE-2.0.html).
 
-Copyright 2018-2023 Broadcom. All Rights Reserved.
+Copyright 2018-2024 Broadcom. All Rights Reserved.
 The term Broadcom refers to Broadcom Inc. and/or its subsidiaries.
