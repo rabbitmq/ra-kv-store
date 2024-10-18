@@ -124,6 +124,7 @@
              db/LogFiles
              (log-files [_ test node]
                         (c/su
+                          (c/exec* (str "chmod o+r " log-dir "/*"))
                           (if (not= "" (try
                                          (c/exec :pgrep :beam)
                                          (catch RuntimeException _ "")))
