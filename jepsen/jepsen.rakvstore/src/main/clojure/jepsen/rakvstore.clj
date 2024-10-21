@@ -150,8 +150,7 @@
       {:client    (Client. nil)
        :checker   (independent/checker
                     (checker/compose
-                      {:linear   (checker/linearizable {:model (model/cas-register)
-                                                        :algorithm :linear})
+                      {:linear   (checker/linearizable {:model (model/cas-register)})
                        :timeline (timeline/html)}))
        :generator (independent/concurrent-generator
                     10
