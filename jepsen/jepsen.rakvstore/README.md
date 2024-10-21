@@ -11,6 +11,8 @@ The easiest is to use a one-time Docker container to compile the release
 with the appropriate configuration:
 
 ```shell
+git clone https://github.com/rabbitmq/ra-kv-store.git ra_kv_store
+cd ra_kv_store
 make rel-jepsen
 ```
 
@@ -47,20 +49,24 @@ cd /root/jepsen.rakvstore
 lein run test --nodes n1,n2,n3 --ssh-private-key /root/shared/jepsen-bot --time-limit 15 --concurrency 10 --rate 10 --workload set --nemesis random-partition-halves
 ```
 
-The execution should finish with something like:
+The execution should finish with something like the following:
 
 ```
-INFO [2018-06-25 08:45:23,157] jepsen test runner - jepsen.core {:ok-count 83,
- :valid? true,
- :lost-count 0,
- :lost "#{}",
- :acknowledged-count 83,
- :recovered "#{}",
- :ok "#{0..43 48 52..62 64..79 81..91}",
- :attempt-count 92,
- :unexpected "#{}",
- :unexpected-count 0,
- :recovered-count 0}
+INFO [2024-10-21 12:38:19,023] jepsen test runner - jepsen.core {:perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :workload {:ok-count 144,
+            :valid? true,
+            :lost-count 0,
+            :lost "#{}",
+            :acknowledged-count 144,
+            :recovered "#{}",
+            :ok "#{0..53 55..56 58..59 61..146}",
+            :attempt-count 147,
+            :unexpected "#{}",
+            :unexpected-count 0,
+            :recovered-count 0},
+ :valid? true}
 
 
 Everything looks good! ヽ(‘ー`)ノ
