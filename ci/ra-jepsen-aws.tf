@@ -24,7 +24,7 @@ resource "aws_key_pair" "ssh_key" {
 
 resource "aws_instance" "jepsen_controller" {
   ami           = data.aws_ami.debian.id
-  instance_type = "t3.large"
+  instance_type = "m7i.xlarge"
   associate_public_ip_address = true
 
   key_name = aws_key_pair.ssh_key.key_name 

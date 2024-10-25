@@ -3,7 +3,7 @@
   :url "https://github.com/rabbitmq/ra-kv-store/tree/master/jepsen.rakvstore"
   :source-paths ["src/main/clojure"]
   :java-source-paths ["src/main/java"]
-  :jvm-opts ["-Xmx6g"]
+  :jvm-opts ["-Xmx12g"]
   :license {:name "Apache 2.0 License"
             :url "https://www.apache.org/licenses/LICENSE-2.0.html"}
   :main jepsen.rakvstore
