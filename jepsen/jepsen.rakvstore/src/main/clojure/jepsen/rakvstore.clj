@@ -38,6 +38,11 @@
 (defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
 (defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
 
+(defn parse-long-nil
+  "Parses a string to a Long. Passes through `nil`."
+  [s]
+  (when s (parse-long s)))
+
 (defrecord Client [conn]
            client/Client
            (open! [this test node]
@@ -49,7 +54,7 @@
                     (let [[k v] (:value op)]
                          (try+
                            (case (:f op)
-                                 :read  (assoc op :type :ok, :value (independent/tuple k (parse-long (com.rabbitmq.jepsen.Utils/get conn k))))
+                                 :read  (assoc op :type :ok, :value (independent/tuple k (parse-long-nil (com.rabbitmq.jepsen.Utils/get conn k))))
                                  :write (do (let [result (com.rabbitmq.jepsen.Utils/write conn k v)]
                                             (assoc op :type :ok :error (str (com.rabbitmq.jepsen.Utils/node conn) " " (.getHeaders result)))))
                                  :cas (let [[old new] v]
