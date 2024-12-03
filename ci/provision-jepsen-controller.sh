@@ -63,7 +63,6 @@ echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
 # get, compile, and package the RA KV store
 git clone https://github.com/rabbitmq/ra-kv-store.git ra_kv_store
+make -C ~/ra_kv_store fetch-deps
+echo $(git -C ra_kv_store log -1 --pretty="%h %B")
 make -C ~/ra_kv_store rel-jepsen-local
-cd ra_kv_store
-echo $(git log -1 --pretty="%h %B")
-cd ..
