@@ -27,9 +27,11 @@
          read/2,
          cas/4]).
 
+-define(OP_TIMEOUT, 100).
+
 write(ServerReference, Key, Value) ->
     Cmd = {write, Key, Value},
-    case ra:process_command(ServerReference, Cmd) of
+    case ra:process_command(ServerReference, Cmd, ?OP_TIMEOUT) of
         {ok, {Index, Term}, LeaderRaNodeId} ->
             {ok, {{index, Index}, {term, Term}, {leader, LeaderRaNodeId}}};
         {timeout, _} ->
@@ -42,7 +44,8 @@ read(ServerReference, Key) ->
                                         index = Index,
                                         term = Term}) ->
                                 {maps:get(Key, Store, undefined), Index, Term}
-                             end)
+                             end,
+                             ?OP_TIMEOUT)
     of
         {ok, {V, Idx, T}, {Leader, _}} ->
             {{read, V}, {index, Idx}, {term, T}, {leader, Leader}};
@@ -59,7 +62,7 @@ read(ServerReference, Key) ->
 
 cas(ServerReference, Key, ExpectedValue, NewValue) ->
     Cmd = {cas, Key, ExpectedValue, NewValue},
-    case ra:process_command(ServerReference, Cmd) of
+    case ra:process_command(ServerReference, Cmd, ?OP_TIMEOUT) of
         {ok, {{read, ReadValue}, {index, Index}, {term, Term}},
          LeaderRaNodeId} ->
             {ok,
