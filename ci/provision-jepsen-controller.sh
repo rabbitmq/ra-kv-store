@@ -61,7 +61,9 @@ touch ~/.ssh/known_hosts
 chmod 600 jepsen-bot 
 echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
+set +e
 # get, compile, and package the RA KV store
 git clone https://github.com/rabbitmq/ra-kv-store.git ~/ra_kv_store
 make -C ~/ra_kv_store rel-jepsen-local
 git --no-pager -C ~/ra_kv_store/deps/ra log -1 --pretty=short
+set -e
