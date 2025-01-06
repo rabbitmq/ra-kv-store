@@ -62,7 +62,12 @@ replay(_Config) ->
     {ok, {{read, 1}, _, _, _}} = ra_kv_store:cas(ra_kv1, 2, undefined, 3),
 
     {ok, RaDataDir} = application:get_env(ra, data_dir),
-    WalFile = filename:join([RaDataDir, node(), "00000001.wal"]),
+    NodeDirectory = filename:join([RaDataDir, node()]),
+    {ok, RaFiles} = file:list_dir(NodeDirectory),
+    WalSuffix = "1.wal",
+    [WalFilename] = lists:filter(fun(F) -> string:find(F, WalSuffix) =:= WalSuffix end, RaFiles),
+
+    WalFile = filename:join([NodeDirectory, WalFilename]),
 
     InitialState = ra_kv_store:init(Config),
     {_, Store, _, _} =
