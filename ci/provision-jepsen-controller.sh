@@ -8,7 +8,7 @@ set -ex
 
 sudo apt-get update
 
-sudo apt-get install -y -V --fix-missing --no-install-recommends \
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -V --fix-missing --no-install-recommends \
     apt-transport-https \
     wget \
     ca-certificates \
@@ -30,7 +30,7 @@ EOF
 
 # install Erlang and some utilities
 sudo apt-get update
-sudo apt-get install -y -V --fix-missing --no-install-recommends \
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -V --fix-missing --no-install-recommends \
   erlang-nox \
   erlang-dev \
   git \
