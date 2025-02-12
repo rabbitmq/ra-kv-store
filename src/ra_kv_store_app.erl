@@ -61,7 +61,8 @@ start(_Type, _Args) ->
             ok = wait_for_nodes(Nodes),
             %% only the smallest node declares a cluster
             timer:sleep(2000),
-            case whereis(ServerName) of
+            MaybePid = whereis(ServerName),
+            case ra_directory:uid_of(default, ServerName) of
                 undefined ->
                     {ok, Started, Failed} =
                         ra:start_cluster(default, ClusterId, Machine, Servers),
@@ -73,9 +74,12 @@ start(_Type, _Args) ->
                             logger:info("RA cluster failures  ~w", [Failed]),
                             ok
                     end;
-                _Pid ->
+                _Uid when is_pid(MaybePid) ->
                     %% already started
-                    ok
+                    ok;
+               _ ->
+                    %% registered but needs restart
+                    ok = ra:restart_server(default, {ServerName, node()})
             end;
         false ->
             ok
