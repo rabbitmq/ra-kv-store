@@ -16,7 +16,7 @@ define PROJECT_ENV
 ]
 endef
 
-dep_ra = git https://github.com/rabbitmq/ra.git handle-lower-index-snapshot
+dep_ra = git https://github.com/rabbitmq/ra.git main
 DEPS = ra cowboy cowlib ranch
 dep_cowboy_commit = 2.11.0
 dep_cowlib = git https://github.com/ninenines/cowlib 2.12.1
