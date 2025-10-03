@@ -4,7 +4,7 @@ set -ex
 
 set +x
 # create SSH key that will be used to connect to the Jepsen VMs
-ssh-keygen -t rsa -m pem -f jepsen-bot -C jepsen-bot -N ''
+ssh-keygen -t ed25519 -m pem -f jepsen-bot -C jepsen-bot -N ''
 
 mkdir -p ~/.aws
 echo "$AWS_CONFIG" > ~/.aws/config 
