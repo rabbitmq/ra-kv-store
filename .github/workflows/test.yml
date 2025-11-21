@@ -12,6 +12,6 @@ jobs:
     container:
       image: pivotalrabbitmq/jepsen
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Test RA KV store 
         run: make tests
