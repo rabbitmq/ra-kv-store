@@ -15,12 +15,17 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -V --fix-missing --no-ins
     gnupg \
     curl
 
-echo "deb https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bookworm main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
-echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bookworm main" | sudo tee --append /etc/apt/sources.list.d/rabbitmq-erlang.list
-wget https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
-sudo apt-key add cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
+## Team RabbitMQ's signing key
+curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
 
-export ERLANG_VERSION="1:27*"
+sudo tee /etc/apt/sources.list.d/rabbitmq.list <<EOF
+## Modern Erlang/OTP releases
+##
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main
+EOF
+
+export ERLANG_VERSION="1:26*"
 sudo mkdir -p /etc/apt/preferences.d/
 sudo tee --append /etc/apt/preferences.d/erlang <<EOF
 Package: erlang*
