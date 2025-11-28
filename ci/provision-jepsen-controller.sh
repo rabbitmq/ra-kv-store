@@ -20,7 +20,7 @@ echo "deb https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/debian bookw
 wget https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 sudo apt-key add cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
 
-export ERLANG_VERSION="1:26*"
+export ERLANG_VERSION="1:27*"
 sudo mkdir -p /etc/apt/preferences.d/
 sudo tee --append /etc/apt/preferences.d/erlang <<EOF
 Package: erlang*
