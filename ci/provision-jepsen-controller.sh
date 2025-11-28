@@ -42,7 +42,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -V --fix-missing --no-ins
  
 # install Java
 export JAVA_PATH="/usr/lib/jdk-21"
-JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz"
+JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.9%2B10/OpenJDK21U-jdk_x64_linux_hotspot_21.0.9_10.tar.gz"
 wget --progress dot:giga --output-document jdk.tar.gz $JAVA_URL
  
 sudo mkdir -p $JAVA_PATH
