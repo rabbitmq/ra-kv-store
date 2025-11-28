@@ -25,7 +25,7 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb
 deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main
 EOF
 
-export ERLANG_VERSION="1:26*"
+export ERLANG_VERSION="1:27*"
 sudo mkdir -p /etc/apt/preferences.d/
 sudo tee --append /etc/apt/preferences.d/erlang <<EOF
 Package: erlang*
