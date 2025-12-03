@@ -145,7 +145,8 @@
                             (do (info node "RA KV Store stopped, cannot get status")
                                 ))
                           )
-                        (conj (jepsen.control.util/ls-full log-dir))
+                        (->> (jepsen.control.util/ls log-dir)
+                             (map #(str log-dir "/" %)))
                         )))
 
 (defn register-workload
