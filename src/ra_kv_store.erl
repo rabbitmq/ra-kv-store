@@ -25,7 +25,8 @@
          apply/3,
          write/3,
          read/2,
-         cas/4]).
+         cas/4,
+         read_query/2]).
 
 -define(OP_TIMEOUT, 100).
 
@@ -39,14 +40,8 @@ write(ServerReference, Key, Value) ->
     end.
 
 read(ServerReference, Key) ->
-    case ra:consistent_query(ServerReference,
-                             fun(#state{store = Store,
-                                        index = Index,
-                                        term = Term}) ->
-                                {maps:get(Key, Store, undefined), Index, Term}
-                             end,
-                             ?OP_TIMEOUT)
-    of
+    MFA = {?MODULE, read_query, [Key]},
+    case ra:consistent_query(ServerReference, MFA, ?OP_TIMEOUT) of
         {ok, {V, Idx, T}, {Leader, _}} ->
             {{read, V}, {index, Idx}, {term, T}, {leader, Leader}};
         {timeout, _} ->
@@ -127,3 +122,8 @@ release_cursor(Index, Every) ->
         _ ->
             do_not_release_cursor
     end.
+
+read_query(Key, #state{store = Store,
+                       index = Index,
+                       term = Term}) ->
+    {maps:get(Key, Store, undefined), Index, Term}.
