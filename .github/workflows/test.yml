@@ -8,9 +8,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container:
-      image: pivotalrabbitmq/jepsen
+      image: 'pivotalrabbitmq/jepsen:trixie'
     steps:
       - uses: actions/checkout@v7
       - name: Test RA KV store 

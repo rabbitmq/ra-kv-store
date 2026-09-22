@@ -3,7 +3,7 @@ PROJECT_DESCRIPTION = Experimental raft-based key/value store
 PROJECT_VERSION = 0.1.0
 PROJECT_MOD = ra_kv_store_app
 
-ERLANG_VERSION_FOR_DOCKER_IMAGE ?= 26.2.5.6
+ERLANG_VERSION_FOR_DOCKER_IMAGE ?= 28.5.0.6
 
 define PROJECT_ENV
 [
@@ -30,7 +30,7 @@ clean-deps:
 	rm -rf deps
 
 rel-docker: clean-rel clean-deps
-	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/ra_kv_store -w /usr/src/ra_kv_store rabbitmqdevenv/erlang-dev-bookworm make rel
+	docker run -it --rm --name erlang-inst1 -v "$(PWD)":/usr/src/ra_kv_store -w /usr/src/ra_kv_store erlang:28 make rel
 
 rel-jepsen: rel-docker
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
@@ -43,13 +43,13 @@ rel-jepsen-local: rel
 erlang-docker-image: ## Build Erlang Docker (for local development)
 	@docker build \
 	  --file Dockerfile-erlang \
-	  --tag rabbitmqdevenv/erlang-dev-bookworm:$(ERLANG_VERSION_FOR_DOCKER_IMAGE) \
-	  --tag rabbitmqdevenv/erlang-dev-bookworm:latest \
+	  --tag rabbitmqdevenv/erlang-dev-trixie:$(ERLANG_VERSION_FOR_DOCKER_IMAGE) \
+	  --tag rabbitmqdevenv/erlang-dev-trixie:latest \
 	  .
 
 .PHONY: push-erlang-docker-image
 push-erlang-docker-image: erlang-docker-image ## Push Erlang Docker image
-	@docker push rabbitmqdevenv/erlang-dev-bookworm:$(ERLANG_VERSION_FOR_DOCKER_IMAGE)
-	@docker push rabbitmqdevenv/erlang-dev-bookworm:latest
+	@docker push rabbitmqdevenv/erlang-dev-trixie:$(ERLANG_VERSION_FOR_DOCKER_IMAGE)
+	@docker push rabbitmqdevenv/erlang-dev-trixie:latest
 
 include erlang.mk
