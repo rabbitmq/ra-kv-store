@@ -18,7 +18,7 @@ endef
 
 DEPS = ra cowboy
 dep_ra = git https://github.com/rabbitmq/ra.git main
-dep_cowboy = git https://github.com/ninenines/cowboy 2.14.2
+dep_cowboy = git https://github.com/ninenines/cowboy 2.19.0
 
 DEP_PLUGINS = cowboy
 BUILD_DEPS = relx
