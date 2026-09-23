@@ -21,11 +21,11 @@ curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803
 sudo tee /etc/apt/sources.list.d/rabbitmq.list <<EOF
 ## Modern Erlang/OTP releases
 ##
-deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main
-deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/debian/trixie trixie main
+deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/debian/trixie trixie main
 EOF
 
-export ERLANG_VERSION="1:27*"
+export ERLANG_VERSION="1:28*"
 sudo mkdir -p /etc/apt/preferences.d/
 sudo tee --append /etc/apt/preferences.d/erlang <<EOF
 Package: erlang*
@@ -47,7 +47,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -V --fix-missing --no-ins
  
 # install Java
 export JAVA_PATH="/usr/lib/jdk-21"
-JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.9%2B10/OpenJDK21U-jdk_x64_linux_hotspot_21.0.9_10.tar.gz"
+JAVA_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk_x64_linux_hotspot_21.0.12.1_1.tar.gz"
 wget --progress dot:giga --output-document jdk.tar.gz $JAVA_URL
  
 sudo mkdir -p $JAVA_PATH

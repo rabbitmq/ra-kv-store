@@ -31,7 +31,7 @@ cp _rel/ra_kv_store_release/ra_kv_store_release-1.tar.gz jepsen/jepsen.rakvstore
 
 ```shell
 cd jepsen/docker
-ssh-keygen -t rsa -m pem -f shared/jepsen-bot -C jepsen-bot -N ''
+ssh-keygen -t ed25519 -m pem -f shared/jepsen-bot -C jepsen-bot -N ''
 docker compose up --detach
 ./provision.sh
 ```

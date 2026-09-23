@@ -1,7 +1,7 @@
 x-node-common: &node-common
   networks:
     - jepsen
-  image: debian:bookworm
+  image: debian:trixie
   tty: true
   volumes:
     - ../jepsen.rakvstore:/root/jepsen.rakvstore
@@ -15,7 +15,7 @@ services:
       - jepsen
     hostname: control
     container_name: jepsen-control
-    image: debian:bookworm
+    image: debian:trixie
     tty: true
     volumes:
       - ../jepsen.rakvstore:/root/jepsen.rakvstore
