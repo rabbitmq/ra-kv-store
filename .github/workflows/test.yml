@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-26.04
     container:
-      image: 'pivotalrabbitmq/jepsen:trixie'
+      image: 'pivotalrabbitmq/jepsen'
     steps:
       - uses: actions/checkout@v7
       - name: Test RA KV store 
