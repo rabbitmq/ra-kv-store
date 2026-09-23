@@ -38,18 +38,4 @@ rel-jepsen: rel-docker
 rel-jepsen-local: rel
 	cp _rel/ra_kv_store_release/*.tar.gz jepsen/jepsen.rakvstore/
 
-
-.PHONY: erlang-docker-image
-erlang-docker-image: ## Build Erlang Docker (for local development)
-	@docker build \
-	  --file Dockerfile-erlang \
-	  --tag rabbitmqdevenv/erlang-dev-trixie:$(ERLANG_VERSION_FOR_DOCKER_IMAGE) \
-	  --tag rabbitmqdevenv/erlang-dev-trixie:latest \
-	  .
-
-.PHONY: push-erlang-docker-image
-push-erlang-docker-image: erlang-docker-image ## Push Erlang Docker image
-	@docker push rabbitmqdevenv/erlang-dev-trixie:$(ERLANG_VERSION_FOR_DOCKER_IMAGE)
-	@docker push rabbitmqdevenv/erlang-dev-trixie:latest
-
 include erlang.mk
